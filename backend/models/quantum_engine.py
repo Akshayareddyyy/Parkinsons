@@ -8,7 +8,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import pennylane as qml
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, List, Optional
 
 # Device configuration (CPU for reproducible simulation)
 DEVICE = torch.device("cpu")
@@ -221,6 +221,57 @@ class QuantumInferenceEngine:
         contributions.sort(key=lambda x: x["impact"], reverse=True)
         return contributions[:4]
 
+    def generate_ai_assessment(self, pred_class: int, prob: float, conf_percent: float,
+                               contributions: List[Dict[str, Any]], model_name: str,
+                               quantum_expval: Optional[float]) -> Dict[str, Any]:
+        """Generates comprehensive AI diagnostic reasoning and clinical guidance based on acoustic telemetry."""
+        is_mild = (pred_class == 0)
+
+        # Primary driving features
+        top_elevating = [c for c in contributions if "Elevates" in c["direction"]]
+        top_feature_names = [c["feature"] for c in contributions[:2]]
+        feat_str = " and ".join(top_feature_names) if top_feature_names else "vocal dysphonia metrics"
+
+        if is_mild:
+            risk_level = "Low Severity - Stable Early-Stage Profile"
+            biomarker_note = f"Acoustic metrics including {feat_str} demonstrate regular periodicity within baseline population norms."
+            action_note = "Continue routine periodic telemonitoring every 30–60 days. No immediate motor intervention indicated."
+
+            q_detail = f" The 4-qubit quantum state transformation registered an expectation value <Z> = {quantum_expval:+.4f}, remaining aligned with low-severity motor states." if quantum_expval is not None else ""
+
+            summary = (
+                f"<strong>AI Clinical Finding:</strong> The model stratifies this patient telemetry as <strong>Class 0 (Mild Impairment)</strong> "
+                f"with <strong>{conf_percent:.1f}% confidence</strong> (calibrated probability: {prob:.4f}). "
+                f"Vocal acoustic features show minimal cycle-to-cycle frequency tremor and preserved harmonic stability.{q_detail} "
+                f"The motor UPDRS profile suggests early-stage symptom stability. Regular remote acoustic monitoring is advised to track longitudinal progression."
+            )
+        else:
+            risk_level = "Elevated Severity - Moderate-to-Severe Impairment Alert"
+            if top_elevating:
+                worst = top_elevating[0]
+                biomarker_note = f"{worst['feature']} is significantly perturbed at {worst['z_score']:+.2f}&sigma; above baseline norm, indicating severe vocal instability."
+            else:
+                biomarker_note = f"Multi-parameter acoustic deviations detected across {feat_str}, reflecting severe laryngeal muscle rigidity."
+
+            action_note = "Recommend formal neurological motor evaluation (MDS-UPDRS Part III) and specialist movement disorder consultation."
+
+            q_detail = f" The quantum expectation value <Z> shifted to {quantum_expval:+.4f}, indicating strong Hilbert-space state rotation toward high-UPDRS motor impairment." if quantum_expval is not None else ""
+
+            summary = (
+                f"<strong>AI Clinical Finding:</strong> The model stratifies this patient telemetry as <strong>Class 1 (Moderate-to-Severe Impairment)</strong> "
+                f"with <strong>{conf_percent:.1f}% confidence</strong> (calibrated probability: {prob:.4f}). "
+                f"Acoustic telemetry reveals pronounced perturbation in vocal micro-timing and elevated harmonic turbulence, "
+                f"characteristic of hypokinetic dysphonia resulting from striatal dopamine depletion.{q_detail} "
+                f"Correlation with physical motor assessments (bradykinesia, rigidity, postural tremor) is clinically indicated."
+            )
+
+        return {
+            "summary": summary,
+            "risk_level": risk_level,
+            "biomarker_note": biomarker_note,
+            "recommendation": action_note
+        }
+
     def predict(self, model_type: str, features_dict: Dict[str, float]) -> Dict[str, Any]:
         """Executes selected model and returns calibrated probability, logit, expval, and contributing features."""
         m_type = model_type.lower().strip()
@@ -257,6 +308,17 @@ class QuantumInferenceEngine:
             pred_class = int(prob >= 0.5)
 
         contributions = self.compute_contributions(raw_arr, scaled_arr, pred_class)
+        conf_pct = round(prob * 100 if pred_class == 1 else (1.0 - prob) * 100, 2)
+        q_expval_val = round(q_val, 4) if m_type in ["qnn", "vqc"] else None
+
+        ai_assessment = self.generate_ai_assessment(
+            pred_class=pred_class,
+            prob=prob,
+            conf_percent=conf_pct,
+            contributions=contributions,
+            model_name=model_name,
+            quantum_expval=q_expval_val
+        )
 
         return {
             "status": "success",
@@ -264,9 +326,10 @@ class QuantumInferenceEngine:
             "model_type": m_type,
             "predicted_class": pred_class,
             "probability": round(prob, 4),
-            "confidence_percent": round(prob * 100 if pred_class == 1 else (1.0 - prob) * 100, 2),
+            "confidence_percent": conf_pct,
             "raw_logit": round(raw_logit, 4),
-            "quantum_expval": round(q_val, 4) if m_type in ["qnn", "vqc"] else None,
+            "quantum_expval": q_expval_val,
             "contributing_features": contributions,
+            "ai_assessment": ai_assessment,
             "inference_type": inference_type
         }

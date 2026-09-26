@@ -1217,6 +1217,117 @@ body {
 }
 
 /* ==========================================================================
+   AI Diagnostic Assessment & Clinical Insights
+   ========================================================================== */
+.ai-insight-panel {
+  margin-top: 1.75rem;
+  background: linear-gradient(135deg, rgba(240, 253, 250, 0.75) 0%, rgba(245, 243, 255, 0.75) 100%);
+  border: 1px solid #ccfbf1;
+  border-left: 4px solid var(--teal-primary);
+  border-radius: var(--radius-md);
+  padding: 1.4rem 1.6rem;
+  box-shadow: 0 4px 14px rgba(15, 118, 110, 0.06);
+  animation: fadeIn 0.35s ease-out;
+}
+
+.ai-insight-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.95rem;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid rgba(203, 213, 225, 0.4);
+}
+
+.ai-insight-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.ai-sparkle-icon {
+  font-size: 1.3rem;
+  color: var(--teal-primary);
+  display: inline-block;
+  animation: sparkleRotate 3.5s ease-in-out infinite;
+}
+
+@keyframes sparkleRotate {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  50% { transform: scale(1.18) rotate(14deg); }
+}
+
+.ai-insight-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.015em;
+}
+
+.ai-model-tag {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--purple-quantum);
+  background: var(--purple-bg);
+  border: 1px solid var(--border-purple);
+  padding: 0.22rem 0.65rem;
+  border-radius: 4px;
+}
+
+.ai-summary-text {
+  font-size: 0.93rem;
+  line-height: 1.7;
+  color: var(--text-secondary);
+  margin-bottom: 1.25rem;
+}
+
+.ai-summary-text strong {
+  color: var(--text-primary);
+}
+
+.ai-insights-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.ai-insight-card {
+  background: #ffffff;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  padding: 0.9rem 1.1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.ai-insight-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+  border-color: var(--border-teal);
+}
+
+.ai-card-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.ai-card-value {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.45;
+}
+
+/* ==========================================================================
    5. Three Learning Paradigms Section
    ========================================================================== */
 .paradigm-ascii-diagram {
