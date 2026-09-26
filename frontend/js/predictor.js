@@ -3,7 +3,7 @@
  * Interacts with FastAPI Backend (/api/predict)
  */
 
-import { ANOVA12_FEATURES } from './data.js';
+import { ANOVA12_FEATURES, FEATURE_GROUPS } from './data.js';
 
 export const PRESETS = {
   mild: {
@@ -100,7 +100,7 @@ export class RealPredictor {
   }
 
   initDOM() {
-    this.container = document.getElementById('inputsGrid');
+    this.container = document.getElementById('inputsSectionsContainer');
     this.modelSelect = document.getElementById('realModelSelect');
     this.modelSelectUpload = document.getElementById('realModelSelectUpload');
     this.executeBtn = document.getElementById('executeBtn');
@@ -125,41 +125,58 @@ export class RealPredictor {
 
     if (!this.container) return;
 
-    this.renderInputs();
+    this.renderGroupedInputs();
     this.attachEvents();
     this.attachUploadEvents();
   }
 
-  renderInputs() {
+  renderGroupedInputs() {
     this.container.innerHTML = '';
 
-    ANOVA12_FEATURES.forEach(f => {
-      const box = document.createElement('div');
-      box.className = 'input-box';
+    FEATURE_GROUPS.forEach(group => {
+      const groupEl = document.createElement('div');
+      groupEl.className = 'feature-group-block';
 
-      box.innerHTML = `
-        <div class="input-label-row">
-          <span class="input-name" title="${f.role}">${f.name}</span>
-          <span class="input-val-badge" id="val_${this.safeId(f.id)}">${this.formatVal(f.id, this.currentValues[f.id])}</span>
+      groupEl.innerHTML = `
+        <div class="group-header">
+          <h4 class="group-title">${group.title}</h4>
+          <span class="group-desc">${group.description}</span>
         </div>
-        <input 
-          type="range" 
-          class="input-slider" 
-          id="range_${this.safeId(f.id)}" 
-          min="${f.min}" 
-          max="${f.max}" 
-          step="${f.step}" 
-          value="${this.currentValues[f.id]}"
-          aria-label="${f.name}"
-        />
-        <div class="input-limits">
-          <span>${f.min}</span>
-          <span>${f.unit}</span>
-          <span>${f.max}</span>
-        </div>
+        <div class="group-inputs-grid" id="grid_${group.id}"></div>
       `;
 
-      this.container.appendChild(box);
+      const gridEl = groupEl.querySelector(`#grid_${group.id}`);
+
+      group.features.forEach(f => {
+        const box = document.createElement('div');
+        box.className = 'input-box';
+
+        box.innerHTML = `
+          <div class="input-label-row">
+            <span class="input-name" title="${f.role}">${f.name}</span>
+            <span class="input-val-badge" id="val_${this.safeId(f.id)}">${this.formatVal(f.id, this.currentValues[f.id])}</span>
+          </div>
+          <input 
+            type="range" 
+            class="input-slider" 
+            id="range_${this.safeId(f.id)}" 
+            min="${f.min}" 
+            max="${f.max}" 
+            step="${f.step}" 
+            value="${this.currentValues[f.id]}"
+            aria-label="${f.name}"
+          />
+          <div class="input-limits">
+            <span>${f.min}</span>
+            <span>${f.unit}</span>
+            <span>${f.max}</span>
+          </div>
+        `;
+
+        gridEl.appendChild(box);
+      });
+
+      this.container.appendChild(groupEl);
     });
   }
 
@@ -455,12 +472,12 @@ export class RealPredictor {
 
     if (this.executeBtn) {
       this.executeBtn.disabled = true;
-      this.executeBtn.innerHTML = '<span>Executing PennyLane Inference...</span>';
+      this.executeBtn.innerHTML = '<span>Executing Model Inference...</span>';
     }
 
     if (this.analyzeReportBtn) {
       this.analyzeReportBtn.disabled = true;
-      this.analyzeReportBtn.innerHTML = '<span>Analyzing with PennyLane...</span>';
+      this.analyzeReportBtn.innerHTML = '<span>Analyzing with Model...</span>';
     }
 
     try {
@@ -487,11 +504,11 @@ export class RealPredictor {
     } finally {
       if (this.executeBtn) {
         this.executeBtn.disabled = false;
-        this.executeBtn.innerHTML = '<span>Execute Model Inference</span><span>→</span>';
+        this.executeBtn.innerHTML = '<span>Predict Parkinson\'s Severity</span><span>→</span>';
       }
       if (this.analyzeReportBtn) {
         this.analyzeReportBtn.disabled = false;
-        this.analyzeReportBtn.innerHTML = '<span>Analyze Report with Quantum Model</span><span>→</span>';
+        this.analyzeReportBtn.innerHTML = '<span>Analyze Report with Selected Model</span><span>→</span>';
       }
     }
   }
@@ -506,28 +523,39 @@ export class RealPredictor {
     const prob = document.getElementById('resProb');
     const conf = document.getElementById('resConf');
     const logit = document.getElementById('resLogit');
-    const qVal = document.getElementById('resQVal');
+    const qValRow = document.getElementById('qValRow');
+    const resQVal = document.getElementById('resQVal');
     const backendTag = document.getElementById('backendTag');
     const probBarFill = document.getElementById('probBarFill');
     const probBarVal = document.getElementById('probBarVal');
+    const contribList = document.getElementById('contributingFeaturesList');
 
     const isMild = data.predicted_class === 0;
 
     if (className) {
-      className.textContent = isMild ? 'CLASS 0 · MILD' : 'CLASS 1 · MODERATE-TO-SEVERE';
+      className.textContent = isMild ? 'CLASS 0 · MILD IMPAIRMENT' : 'CLASS 1 · MODERATE-TO-SEVERE IMPAIRMENT';
       className.className = `res-class-name ${isMild ? 'mild' : 'severe'}`;
     }
 
     if (classSub) {
       classSub.textContent = isMild 
-        ? "Unified Parkinson's Disease Rating Scale below high-severity threshold."
+        ? "Unified Parkinson's Disease Rating Scale indicates low motor impairment."
         : "Unified Parkinson's Disease Rating Scale indicates elevated motor impairment.";
     }
 
     if (prob) prob.textContent = data.probability.toFixed(4);
     if (conf) conf.textContent = `${data.confidence_percent}%`;
     if (logit) logit.textContent = data.raw_logit.toFixed(4);
-    if (qVal) qVal.textContent = data.quantum_expval.toFixed(4);
+
+    if (qValRow && resQVal) {
+      if (data.quantum_expval !== null && data.quantum_expval !== undefined) {
+        qValRow.style.display = 'flex';
+        resQVal.textContent = data.quantum_expval.toFixed(4);
+      } else {
+        qValRow.style.display = 'none';
+      }
+    }
+
     if (backendTag) backendTag.textContent = `${data.model} · ${data.inference_type}`;
 
     if (probBarFill && probBarVal) {
@@ -537,6 +565,24 @@ export class RealPredictor {
         probBarFill.style.width = `${pct}%`;
         probBarVal.textContent = `${pct}%`;
       }, 50);
+    }
+
+    // Render Important Contributing Features
+    if (contribList && data.contributing_features) {
+      contribList.innerHTML = '';
+      data.contributing_features.forEach(item => {
+        const li = document.createElement('div');
+        li.className = 'contrib-item';
+        const isElevated = item.direction.includes('Elevates');
+        li.innerHTML = `
+          <div class="contrib-left">
+            <strong class="contrib-name">${item.feature}</strong>
+            <span class="contrib-val">Value: ${item.value} (${item.z_score >= 0 ? '+' : ''}${item.z_score}σ)</span>
+          </div>
+          <span class="contrib-tag ${isElevated ? 'elevates' : 'normal'}">${item.direction}</span>
+        `;
+        contribList.appendChild(li);
+      });
     }
 
     this.outputPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });

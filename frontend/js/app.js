@@ -2,51 +2,18 @@
  * QML-PD Research Platform - Main Application Coordinator
  */
 
-import { BENCHMARK_RESULTS, DATASET_SPEC } from './data.js';
-import { HeroPipelineVisualizer } from './visualizations.js';
 import { RealPredictor } from './predictor.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-  // 1. Initialize Single Focused Hero Pipeline Visualizer
-  const heroVisualizer = new HeroPipelineVisualizer('heroPipelineCanvas');
-
-  // 2. Initialize Real Predictor Engine
+  // 1. Initialize Real Predictor Engine
   const predictor = new RealPredictor();
 
-  // 3. Render Benchmark Results Table from Canonical Data
-  renderBenchmarkTable();
-
-  // 4. Setup Smooth Nav Spy
+  // 2. Setup Smooth Navigation Spy
   setupNavigationSpy();
+
+  // 3. Setup Subtle Scroll Animation for Methodology Sequence
+  setupMethodologyScrollAnimation();
 });
-
-function renderBenchmarkTable() {
-  const tbody = document.getElementById('benchmarkTableBody');
-  if (!tbody) return;
-
-  tbody.innerHTML = '';
-  BENCHMARK_RESULTS.forEach(row => {
-    const tr = document.createElement('tr');
-    if (row.paradigmKey === 'quantum') {
-      tr.className = 'highlight-quantum';
-    }
-
-    const badgeClass = row.paradigmKey === 'quantum' 
-      ? 'badge-quantum' 
-      : (row.paradigmKey === 'federated' ? 'badge-federated' : 'badge-central');
-
-    tr.innerHTML = `
-      <td><strong>${row.model}</strong></td>
-      <td><span class="${badgeClass}">${row.paradigm}</span></td>
-      <td class="acc-val">${row.accuracyStr}</td>
-      <td>${row.precision}</td>
-      <td>${row.recall}</td>
-      <td>${row.f1}</td>
-      <td><span class="note-pill">${row.framework}</span></td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
 
 function setupNavigationSpy() {
   const sections = document.querySelectorAll('section[id]');
@@ -54,7 +21,7 @@ function setupNavigationSpy() {
 
   window.addEventListener('scroll', () => {
     let currentId = '';
-    const scrollY = window.pageYOffset + 120;
+    const scrollY = window.pageYOffset + 140;
 
     sections.forEach(sec => {
       const top = sec.offsetTop;
@@ -73,4 +40,31 @@ function setupNavigationSpy() {
       });
     }
   }, { passive: true });
+}
+
+function setupMethodologyScrollAnimation() {
+  const stepNodes = document.querySelectorAll('.method-step-node');
+  if (!stepNodes.length) return;
+
+  if ('IntersectionObserver' in window) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, {
+      root: null,
+      threshold: 0.15,
+      rootMargin: "0px 0px -40px 0px"
+    });
+
+    stepNodes.forEach((node, index) => {
+      node.style.transitionDelay = `${index * 60}ms`;
+      observer.observe(node);
+    });
+  } else {
+    // Fallback if browser doesn't support IntersectionObserver
+    stepNodes.forEach(node => node.classList.add('visible'));
+  }
 }
