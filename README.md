@@ -7,6 +7,20 @@
 
 A publication-grade comparative research platform evaluating **Centralized**, **Federated**, and **Variational Quantum Neural Network (QNN / VQC)** architectures for motor UPDRS severity stratification on the Oxford Telemonitoring cohort under strict zero subject-leakage constraints.
 
+**Institution:** B V Raju Institute of Technology
+
+---
+
+## 🩺 Clinical Overview & Neurobiology
+
+Parkinson's disease is a progressive neurodegenerative disorder primarily characterized by the loss of dopaminergic neurons in the **substantia nigra pars compacta**, resulting in reduced dopamine transmission in the basal ganglia. This depletion impairs voluntary motor coordination, producing hallmark clinical manifestations:
+
+- **Motor Symptoms:** Resting tremor, bradykinesia (slowness of movement), muscle rigidity, and postural instability.
+- **Non-Motor Symptoms:** Dysphonia (vocal micro-perturbations), sleep disturbances, sensory and cognitive changes.
+- **Clinical Telemonitoring:** Early dysphonia can be evaluated non-invasively through sustained vowel phonations, enabling automated remote severity stratification into mild (motor UPDRS $\le$ threshold) versus moderate-to-severe impairment.
+
+![Neurobiology of Parkinson's Disease](frontend/assets/parkinsons_neurobiology.jpg)
+
 ---
 
 ## 🔬 Scientific Highlights & Dataset Protocol
@@ -41,12 +55,12 @@ All models were evaluated strictly on the **locked test set (1,290 recordings, 9
 
 | Paradigm | Model Architecture | Test Accuracy | Macro Precision | Macro Recall | Macro F1 | Framework |
 | :--- | :--- | :---: | :---: | :---: | :---: | :--- |
+| **Centralized** | **Centralized Random Forest** | **99.83%** | 99.80% | 99.85% | 99.83% | Scikit-Learn Baseline |
+| **Federated** | **Federated Random Forest** | **100.00%** | 100.00% | 100.00% | 100.00% | FedAvg (26 Edge Clients) |
 | **Quantum** | **True QNN (Phase 24 · 4-Qubit)** | **97.91%** | 98.05% | 97.80% | 97.92% | PennyLane + PyTorch |
 | **Quantum** | **Hybrid VQC (Phase 21 · 4-Qubit)** | **96.82%** | 97.10% | 96.55% | 96.82% | PennyLane + PyTorch |
 | **Centralized** | Logistic Regression | 99.53% | 99.50% | 99.55% | 99.53% | Scikit-Learn Baseline |
-| **Centralized** | Extra Trees | 97.29% | 97.35% | 97.20% | 97.27% | Scikit-Learn Baseline |
-| **Federated** | Federated Random Forest | 100.00% | 100.00% | 100.00% | 100.00% | Federated Averaging (26 Clients) |
-| **Federated** | Federated Extra Trees | 99.46% | 99.48% | 99.44% | 99.46% | Federated Averaging (26 Clients) |
+| **Federated** | Federated Extra Trees | 99.46% | 99.48% | 99.44% | 99.46% | FedAvg (26 Edge Clients) |
 
 ---
 
@@ -55,12 +69,14 @@ All models were evaluated strictly on the **locked test set (1,290 recordings, 9
 ```text
 Parkinsons/
 │
-├── frontend/                     # Clean publication web application
+├── frontend/                     # Clean publication web application (Light Clinical Theme)
 │   ├── index.html                # Structured academic landing interface
+│   ├── assets/                   # Medical illustrations & diagrams
+│   │   └── parkinsons_neurobiology.jpg
 │   ├── css/
-│   │   └── style.css             # Publication design system
+│   │   └── style.css             # Publication design system (Teal & Slate palette)
 │   └── js/
-│       ├── app.js                # Main coordinator
+│       ├── app.js                # Main coordinator & methodology scroll animation
 │       ├── data.js               # Canonical benchmark data & ANOVA-12 specs
 │       ├── predictor.js          # Live inference & report upload client
 │       └── visualizations.js     # Single focused transformation visualizer
@@ -81,7 +97,7 @@ Parkinsons/
 │   ├── docker-compose.yml        # Local container orchestration
 │   └── render.yaml               # 1-click cloud blueprint
 │
-├── server.py                     # Convenience runner (delegates to uvicorn)
+├── server.py                     # Convenience runner (uvicorn backend.app:app)
 ├── .gitignore                    # Python, Jupyter & OS ignores
 └── README.md                     # Research documentation
 ```
@@ -165,7 +181,7 @@ Returns locked-test benchmark accuracies and quantum specifications.
 
 ### Execute Live Inference
 `POST /api/predict`
-Executes real quantum forward pass on provided 12 ANOVA features.
+Executes real quantum forward pass on provided 12 ANOVA features and returns probability, logit, expectation value, and mathematically ranked contributing biomarkers.
 
 **Request Payload:**
 ```json
@@ -199,22 +215,32 @@ Executes real quantum forward pass on provided 12 ANOVA features.
   "confidence_percent": 85.97,
   "raw_logit": 1.8131,
   "quantum_expval": 0.8829,
+  "contributing_features": [
+    {
+      "feature": "PPE",
+      "value": 0.485,
+      "z_score": 2.9,
+      "impact": 5.367,
+      "direction": "Elevates Severity"
+    }
+  ],
   "inference_type": "Real PennyLane/PyTorch Execution (default.qubit)"
 }
 ```
 
 ---
 
-## 📚 Academic References
+## 📚 Academic & Clinical Resources
 
-1. Little, M. A., McSharry, P. E., Hunter, E. J., Spielman, J., & Ramig, L. O. (2009). *Suitability of dysphonia measurements for telemonitoring of Parkinson's disease.* IEEE Transactions on Biomedical Engineering, 56(4), 1015-1022.
-2. Bergholm, V., Izaac, J., Schuld, M., Gogolin, C., Alam, M. S., et al. (2018). *PennyLane: Automatic differentiation and machine learning of quantum programs.* arXiv:1811.04968.
-3. Schuld, M., Bocharov, A., Svore, K. M., & Wiebe, N. (2020). *Circuit-centric quantum classifiers.* Physical Review A, 101(3), 032308.
-4. McMahan, B., Moore, E., Ramage, D., Hampson, S., & y Arcas, B. A. (2017). *Communication-Efficient Learning of Deep Networks from Decentralized Data.* AISTATS 2017.
-5. Tsanas, A., Little, M. A., McSharry, P. E., & Ramig, L. O. (2012). *Novel speech signal processing algorithms for high-accuracy classification of Parkinson's disease.* IEEE Transactions on Biomedical Engineering, 59(5), 1264-1271.
+1. **World Health Organization (WHO):** [Parkinson's Disease Fact Sheet](https://www.who.int/news-room/fact-sheets/detail/parkinson-disease)
+2. **National Institute of Neurological Disorders and Stroke (NINDS):** [Common Data Elements (CDE) for Parkinson's Disease](https://commondataelements.ninds.nih.gov/Parkinson%27s%20Disease)
+3. **Oxford Telemonitoring Dataset (UCI):** Little, M. A., McSharry, P. E., Hunter, E. J., Spielman, J., & Ramig, L. O. (2009). *Suitability of dysphonia measurements for telemonitoring of Parkinson's disease.* IEEE Transactions on Biomedical Engineering, 56(4), 1015-1022.
+4. **PennyLane Quantum Framework:** Bergholm, V., Izaac, J., Schuld, M., et al. (2018). *PennyLane: Automatic differentiation and machine learning of quantum programs.* arXiv:1811.04968.
+5. **Variational Quantum Classifiers:** Schuld, M., Bocharov, A., Svore, K. M., & Wiebe, N. (2020). *Circuit-centric quantum classifiers.* Physical Review A, 101(3), 032308.
+6. **Federated Learning in Healthcare:** McMahan, B., Moore, E., Ramage, D., Hampson, S., & y Arcas, B. A. (2017). *Communication-Efficient Learning of Deep Networks from Decentralized Data.* AISTATS 2017.
 
 ---
 
-## ⚖️ Research Disclaimer
+## ⚖️ Clinical Disclaimer
 
-This research platform is designed for academic and computational benchmarking purposes. It does not provide medical diagnosis or clinical treatment recommendations.
+This software is an academic research and educational prototype. It is not approved by medical regulatory authorities and does not replace professional medical diagnosis, clinical judgment, or treatment recommendations.
