@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quantum Machine Learning-Based Parkinson's Disease Prediction | Research Platform</title>
+  <meta name="description" content="A comparative study of centralized, federated, and quantum machine learning approaches for Parkinson's disease severity classification using subject-wise evaluation.">
+  <link rel="stylesheet" href="css/style.css?v=20260924_upload_v2">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚛️</text></svg>">
+</head>
+<body>
+
+  <!-- ========================================================================
+       Header & Navigation
+       ======================================================================== -->
+  <header class="site-header" id="siteHeader">
+    <div class="nav-container">
+      <!-- Left: Logo Icon Only -->
+      <a href="#hero" class="brand-wrapper" aria-label="Home" title="QML-PD Research Platform">
+        <div class="brand-icon-box">
+          <span class="brand-icon">Ψ</span>
+        </div>
+      </a>
+
+      <!-- Center: Structured Segmented Island Nav -->
+      <nav class="nav-island">
+        <ul class="nav-links" id="navLinksList">
+          <li><a href="#hero" class="nav-link active">Home</a></li>
+          <li><a href="#methodology" class="nav-link">3D Methodology</a></li>
+          <li><a href="#paradigms" class="nav-link">Paradigms</a></li>
+          <li><a href="#circuit" class="nav-link">Circuit</a></li>
+          <li><a href="#results" class="nav-link">Results</a></li>
+          <li><a href="#prediction" class="nav-link">Live Prediction</a></li>
+        </ul>
+      </nav>
+
+      <!-- Right: Structured Action Group -->
+      <div class="header-actions">
+        <div class="status-pill" title="PennyLane v0.45.0 CPU Simulator Active">
+          <span class="status-dot"></span>
+          <span>Live PennyLane</span>
+        </div>
+        <a href="#prediction" class="btn-nav-action">
+          <span>Run Prediction</span>
+          <span class="nav-btn-arrow">→</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="page-wrapper">
+
+    <!-- ========================================================================
+         1. HERO / HOME (Award-Winning Landing Screen)
+         ======================================================================== -->
+    <section class="hero-section" id="hero">
+      <div class="hero-content">
+        <h1 class="hero-title">
+          Quantum Machine Learning-Based<br>
+          <span class="accent-cyan">Parkinson's Disease</span> Prediction
+        </h1>
+
+        <!-- Publication Research Metrics with Live Animated Counters -->
+        <div class="hero-facts-row">
+          <div class="fact-item">
+            <span class="fact-number counter-value" data-target="5875">0</span>
+            <span class="fact-label">Recordings</span>
+          </div>
+          <div class="fact-divider"></div>
+          <div class="fact-item">
+            <span class="fact-number counter-value" data-target="42">0</span>
+            <span class="fact-label">Subjects</span>
+          </div>
+          <div class="fact-divider"></div>
+          <div class="fact-item">
+            <span class="fact-number counter-value" data-target="12">0</span>
+            <span class="fact-label">ANOVA Features</span>
+          </div>
+          <div class="fact-divider"></div>
+          <div class="fact-item">
+            <span class="fact-number counter-value" data-target="3">0</span>
+            <span class="fact-label">Paradigms</span>
+          </div>
+        </div>
+
+        <div class="hero-actions">
+          <a href="#methodology" class="btn-primary">Explore Research</a>
+          <a href="#prediction" class="btn-secondary">Run Live Prediction</a>
+        </div>
+
+      </div>
+
+      <!-- Right: Computational Transformation Pipeline Visualizer -->
+      <div class="hero-visual-card">
+        <div class="visual-card-title">COMPUTATIONAL TRANSFORMATION PIPELINE</div>
+        <div class="transformation-canvas-container">
+          <canvas id="heroPipelineCanvas"></canvas>
+        </div>
+        <div class="visual-legend">
+          <div class="legend-item"><span class="legend-dot cyan"></span><span>Biomarker Space</span></div>
+          <div class="legend-item"><span class="legend-dot violet"></span><span>Quantum State |ψ⟩</span></div>
+          <div class="legend-item"><span class="legend-dot emerald"></span><span>Severity Class</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================================
+         2. 3D METHODOLOGY & ZERO-LEAKAGE PROTOCOL
+         ======================================================================== -->
+    <section class="section-block" id="methodology">
+      <div class="section-header">
+        <h2 class="section-title">3D Methodology & Zero-Leakage Protocol</h2>
+        <p class="section-lead">
+          Interactive 3D constellation of the 42 subjects partitioned across three strictly isolated subsets. Click and drag to rotate the 3D subject topology in real-time.
+        </p>
+      </div>
+
+      <div class="methodology-grid">
+        <!-- 3D Interactive Canvas -->
+        <div class="canvas-3d-card">
+          <div class="card-top-bar">
+            <span class="card-badge">INTERACTIVE 3D SUBJECT TOPOLOGY</span>
+            <span class="card-meta">42 Subjects · Zero Inter-Set Overlap</span>
+          </div>
+          <div class="canvas-3d-container">
+            <canvas id="methodology3DCanvas"></canvas>
+          </div>
+          <div class="splits-legend-row">
+            <div class="split-legend-item"><span class="legend-dot cyan"></span><span>Development (26 Subjects)</span></div>
+            <div class="split-legend-item"><span class="legend-dot violet"></span><span>Validation (7 Subjects)</span></div>
+            <div class="split-legend-item"><span class="legend-dot emerald"></span><span>Locked Test (9 Subjects)</span></div>
+          </div>
+        </div>
+
+        <!-- Protocol Cards & Feature Grid -->
+        <div class="methodology-details-col">
+          <div class="splits-grid-vertical">
+            <div class="split-card">
+              <span class="split-badge">SPLIT 01</span>
+              <h3 class="split-title">Development</h3>
+              <div class="split-count">26 subjects · 3,602 recordings</div>
+              <p class="split-sub">StandardScaler and ANOVA selector fitted strictly on this split.</p>
+            </div>
+
+            <div class="split-card">
+              <span class="split-badge">SPLIT 02</span>
+              <h3 class="split-title">Validation</h3>
+              <div class="split-count">7 subjects · 983 recordings</div>
+              <p class="split-sub">Used exclusively for model checkpointing and architecture selection.</p>
+            </div>
+
+            <div class="split-card locked">
+              <span class="split-badge emerald">SPLIT 03</span>
+              <h3 class="split-title">Locked Test</h3>
+              <div class="split-count">9 subjects · 1,290 recordings</div>
+              <p class="split-sub">Evaluated exactly once after models were frozen. No retraining.</p>
+            </div>
+          </div>
+
+          <!-- Highlight Banner -->
+          <div class="method-highlight-banner">
+            <span class="highlight-dot"></span>
+            <span><strong>Locked test subjects were not used for model development.</strong> Preprocessing and feature selection were fitted strictly on the development split.</span>
+          </div>
+
+          <!-- 12 Selected ANOVA Features -->
+          <div class="features-compact-section">
+            <div class="features-label">12 SELECTED ANOVA FEATURES</div>
+            <div class="features-compact-grid">
+              <div class="feature-tag">motor_UPDRS</div>
+              <div class="feature-tag">PPE</div>
+              <div class="feature-tag">RPDE</div>
+              <div class="feature-tag">HNR</div>
+              <div class="feature-tag">DFA</div>
+              <div class="feature-tag">Jitter(Abs)</div>
+              <div class="feature-tag">Jitter(%)</div>
+              <div class="feature-tag">Jitter:RAP</div>
+              <div class="feature-tag">Jitter:PPQ5</div>
+              <div class="feature-tag">Jitter:DDP</div>
+              <div class="feature-tag">age</div>
+              <div class="feature-tag">sex</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================================
+         3. THREE LEARNING PARADIGMS (Connected Pathways)
+         ======================================================================== -->
+    <section class="section-block" id="paradigms">
+      <div class="section-header">
+        <h2 class="section-title">Three Learning Paradigms</h2>
+        <p class="section-lead">
+          Three computational paradigms evaluated under identical subject-wise data constraints. Switch tabs to observe the active computational pathways.
+        </p>
+      </div>
+
+      <!-- Paradigm Switcher Tabs -->
+      <div class="paradigm-tabs-bar">
+        <button class="paradigm-tab-btn active" data-paradigm="centralized">01 · Centralized Pathway</button>
+        <button class="paradigm-tab-btn" data-paradigm="federated">02 · Federated Pathway</button>
+        <button class="paradigm-tab-btn quantum" data-paradigm="quantum">03 · Quantum Pathway</button>
+      </div>
+
+      <!-- Interactive Pathway Canvas -->
+      <div class="pathway-card">
+        <div class="pathway-canvas-container">
+          <canvas id="paradigmCanvas"></canvas>
+        </div>
+      </div>
+
+      <!-- 3 Cards -->
+      <div class="paradigms-three-grid">
+        <div class="paradigm-card">
+          <div class="paradigm-badge">PARADIGM 01</div>
+          <h3 class="paradigm-title">CENTRALIZED</h3>
+          <p class="paradigm-desc">Centralized machine learning over pooled development data.</p>
+          <div class="paradigm-models-footer">
+            <span class="models-label">MODELS USED:</span>
+            <span class="models-val">Logistic Regression, Extra Trees</span>
+          </div>
+        </div>
+
+        <div class="paradigm-card">
+          <div class="paradigm-badge cyan">PARADIGM 02</div>
+          <h3 class="paradigm-title">FEDERATED</h3>
+          <p class="paradigm-desc">Subject/client-partitioned learning preserving local data privacy.</p>
+          <div class="paradigm-models-footer">
+            <span class="models-label">MODELS USED:</span>
+            <span class="models-val">Federated Random Forest, Federated Extra Trees</span>
+          </div>
+        </div>
+
+        <div class="paradigm-card quantum">
+          <div class="paradigm-badge violet">PARADIGM 03</div>
+          <h3 class="paradigm-title">QUANTUM</h3>
+          <p class="paradigm-desc">Parameterized variational quantum circuits in Hilbert space.</p>
+          <div class="paradigm-models-footer">
+            <span class="models-label">MODELS USED:</span>
+            <span class="models-val">True QNN, Hybrid VQC</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================================
+         4. QUANTUM CIRCUIT ARCHITECTURE
+         ======================================================================== -->
+    <section class="section-block" id="circuit">
+      <div class="section-header">
+        <div class="section-header-row">
+          <h2 class="section-title">Quantum Circuit Architecture</h2>
+          <span class="tech-label">4-qubit variational circuit</span>
+        </div>
+        <p class="section-lead">
+          PennyLane parameterized quantum circuit with RY/RZ angle state encoding, variational rotation layers, CNOT ring entanglement, and Pauli-Z expectation measurements.
+        </p>
+      </div>
+
+      <div class="circuit-container-card">
+        <div class="circuit-svg-wrap">
+          <svg class="clean-circuit-svg" viewBox="0 0 860 260">
+            <text x="30" y="55" class="wire-label">|q0⟩</text>
+            <text x="30" y="115" class="wire-label">|q1⟩</text>
+            <text x="30" y="175" class="wire-label">|q2⟩</text>
+            <text x="30" y="235" class="wire-label">|q3⟩</text>
+
+            <!-- Qubit transmission lines with live quantum photon pulse animation -->
+            <line x1="75" y1="50" x2="810" y2="50" class="wire-line" />
+            <line x1="75" y1="50" x2="810" y2="50" class="wire-pulse q0" />
+
+            <line x1="75" y1="110" x2="810" y2="110" class="wire-line" />
+            <line x1="75" y1="110" x2="810" y2="110" class="wire-pulse q1" />
+
+            <line x1="75" y1="170" x2="810" y2="170" class="wire-line" />
+            <line x1="75" y1="170" x2="810" y2="170" class="wire-pulse q2" />
+
+            <line x1="75" y1="230" x2="810" y2="230" class="wire-line" />
+            <line x1="75" y1="230" x2="810" y2="230" class="wire-pulse q3" />
+
+            <line x1="120" y1="20" x2="120" y2="250" class="wire-divider" />
+            <text x="95" y="18" class="col-label">12→4D</text>
+
+            <!-- RY Encoding -->
+            <rect x="150" y="35" width="30" height="30" class="gate-rect encoding" rx="3" />
+            <text x="165" y="55" class="gate-text">RY</text>
+            <rect x="150" y="95" width="30" height="30" class="gate-rect encoding" rx="3" />
+            <text x="165" y="115" class="gate-text">RY</text>
+            <rect x="150" y="155" width="30" height="30" class="gate-rect encoding" rx="3" />
+            <text x="165" y="175" class="gate-text">RY</text>
+            <rect x="150" y="215" width="30" height="30" class="gate-rect encoding" rx="3" />
+            <text x="165" y="235" class="gate-text">RY</text>
+
+            <!-- RZ Encoding -->
+            <rect x="200" y="35" width="30" height="30" class="gate-rect encoding" rx="3" />
+            <text x="215" y="55" class="gate-text">RZ</text>
+            <rect x="200" y="95" width="30" height="30" class="gate-rect encoding" rx="3" />
+            <text x="215" y="115" class="gate-text">RZ</text>
+            <rect x="200" y="155" width="30" height="30" class="gate-rect encoding" rx="3" />
+            <text x="215" y="175" class="gate-text">RZ</text>
+            <rect x="200" y="215" width="30" height="30" class="gate-rect encoding" rx="3" />
+            <text x="215" y="235" class="gate-text">RZ</text>
+
+            <!-- Variational Layer 1 -->
+            <rect x="275" y="35" width="30" height="30" class="gate-rect ansatz" rx="3" />
+            <text x="290" y="55" class="gate-text">U1</text>
+            <rect x="275" y="95" width="30" height="30" class="gate-rect ansatz" rx="3" />
+            <text x="290" y="115" class="gate-text">U1</text>
+            <rect x="275" y="155" width="30" height="30" class="gate-rect ansatz" rx="3" />
+            <text x="290" y="175" class="gate-text">U1</text>
+            <rect x="275" y="215" width="30" height="30" class="gate-rect ansatz" rx="3" />
+            <text x="290" y="235" class="gate-text">U1</text>
+
+            <!-- CNOT Entanglement -->
+            <line x1="360" y1="50" x2="360" y2="110" class="cnot-line" />
+            <circle cx="360" cy="50" r="4" class="cnot-dot" />
+            <circle cx="360" cy="110" r="8" class="cnot-target" />
+
+            <line x1="410" y1="110" x2="410" y2="170" class="cnot-line" />
+            <circle cx="410" cy="110" r="4" class="cnot-dot" />
+            <circle cx="410" cy="170" r="8" class="cnot-target" />
+
+            <line x1="460" y1="170" x2="460" y2="230" class="cnot-line" />
+            <circle cx="460" cy="170" r="4" class="cnot-dot" />
+            <circle cx="460" cy="230" r="8" class="cnot-target" />
+
+            <line x1="510" y1="50" x2="510" y2="230" class="cnot-line" />
+            <circle cx="510" cy="230" r="4" class="cnot-dot" />
+            <circle cx="510" cy="50" r="8" class="cnot-target" />
+
+            <!-- Variational Layer 2 -->
+            <rect x="565" y="35" width="30" height="30" class="gate-rect ansatz" rx="3" />
+            <text x="580" y="55" class="gate-text">U2</text>
+            <rect x="565" y="95" width="30" height="30" class="gate-rect ansatz" rx="3" />
+            <text x="580" y="115" class="gate-text">U2</text>
+            <rect x="565" y="155" width="30" height="30" class="gate-rect ansatz" rx="3" />
+            <text x="580" y="175" class="gate-text">U2</text>
+            <rect x="565" y="215" width="30" height="30" class="gate-rect ansatz" rx="3" />
+            <text x="580" y="235" class="gate-text">U2</text>
+
+            <!-- Measurement -->
+            <rect x="665" y="35" width="30" height="30" class="gate-rect measure" rx="3" />
+            <text x="680" y="55" class="gate-text">⟨Z⟩</text>
+            <rect x="665" y="95" width="30" height="30" class="gate-rect measure" rx="3" />
+            <text x="680" y="115" class="gate-text">⟨Z⟩</text>
+            <rect x="665" y="155" width="30" height="30" class="gate-rect measure" rx="3" />
+            <text x="680" y="175" class="gate-text">⟨Z⟩</text>
+            <rect x="665" y="215" width="30" height="30" class="gate-rect measure" rx="3" />
+            <text x="680" y="235" class="gate-text">⟨Z⟩</text>
+
+            <text x="735" y="140" class="wire-label">→ Readout</text>
+          </svg>
+        </div>
+
+        <div class="circuit-steps-strip">
+          <div class="c-step">Input Features</div>
+          <span class="c-arrow">→</span>
+          <div class="c-step">4-D Projection</div>
+          <span class="c-arrow">→</span>
+          <div class="c-step">RY / RZ Encoding</div>
+          <span class="c-arrow">→</span>
+          <div class="c-step">Trainable Layers</div>
+          <span class="c-arrow">→</span>
+          <div class="c-step">CNOT Entanglement</div>
+          <span class="c-arrow">→</span>
+          <div class="c-step">Measurement</div>
+          <span class="c-arrow">→</span>
+          <div class="c-step highlight">Classification</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================================
+         5. RESULTS
+         ======================================================================== -->
+    <section class="section-block" id="results">
+      <div class="section-header">
+        <h2 class="section-title">Results</h2>
+        <p class="section-lead">
+          Comparative performance on the 1,290 locked test samples from 9 unseen subjects. Locked test subjects were not used for model development.
+        </p>
+      </div>
+
+      <div class="results-table-card">
+        <table class="clean-results-table">
+          <thead>
+            <tr>
+              <th>Model</th>
+              <th>Paradigm</th>
+              <th style="text-align: right;">Accuracy</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="highlight-quantum">
+              <td><strong>QNN</strong></td>
+              <td><span class="badge-quantum">Quantum</span></td>
+              <td class="acc-val">97.91%</td>
+            </tr>
+            <tr class="highlight-quantum">
+              <td><strong>VQC</strong></td>
+              <td><span class="badge-quantum">Quantum</span></td>
+              <td class="acc-val">96.82%</td>
+            </tr>
+            <tr>
+              <td><strong>Logistic Regression</strong></td>
+              <td><span class="badge-central">Centralized</span></td>
+              <td class="acc-val">99.53%</td>
+            </tr>
+            <tr>
+              <td><strong>Extra Trees</strong></td>
+              <td><span class="badge-central">Centralized</span></td>
+              <td class="acc-val">97.29%</td>
+            </tr>
+            <tr>
+              <td><strong>Federated Random Forest</strong></td>
+              <td><span class="badge-federated">Federated</span></td>
+              <td class="acc-val">100.00%</td>
+            </tr>
+            <tr>
+              <td><strong>Federated Extra Trees</strong></td>
+              <td><span class="badge-federated">Federated</span></td>
+              <td class="acc-val">99.46%</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="results-footer-note">
+          Results reported on the locked test set.
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================================
+         6. LIVE PREDICTION ENGINE (Real PennyLane Backend Inference)
+         ======================================================================== -->
+    <section class="section-block" id="prediction">
+      <div class="section-header">
+        <h2 class="section-title">Live Prediction Engine</h2>
+        <p class="section-lead">
+          Live model inference executed directly by the PyTorch / PennyLane backend on CPU.
+        </p>
+      </div>
+
+      <div class="prediction-card">
+        <div class="engine-pipeline">
+          <span class="ep-step">Input</span>
+          <span class="ep-arrow">→</span>
+          <span class="ep-step">Dev Preprocessing</span>
+          <span class="ep-arrow">→</span>
+          <span class="ep-step">ANOVA12 Representation</span>
+          <span class="ep-arrow">→</span>
+          <span class="ep-step">Selected Model</span>
+          <span class="ep-arrow">→</span>
+          <span class="ep-step active">Prediction</span>
+        </div>
+
+        <!-- Mode Switcher: Manual Calibration vs Upload Clinical Report -->
+        <div class="prediction-mode-switcher">
+          <button type="button" class="mode-tab-btn active" id="modeManualBtn" data-mode="manual">
+            <span class="mode-icon">⚙</span>
+            <span>Manual Parameter Calibration</span>
+          </button>
+          <button type="button" class="mode-tab-btn" id="modeUploadBtn" data-mode="upload">
+            <span class="mode-icon">📁</span>
+            <span>Upload Clinical Report</span>
+            <span class="mode-tag">Automated Extraction</span>
+          </button>
+        </div>
+
+        <!-- 1. MANUAL MODE SECTION -->
+        <div class="mode-section-wrap" id="manualModeSection">
+          <div class="engine-toolbar">
+            <div class="presets-row">
+              <span class="toolbar-label">Presets:</span>
+              <button class="btn-preset active" data-preset="mild">Mild (Early UPDRS)</button>
+              <button class="btn-preset" data-preset="moderate">Moderate Severity</button>
+              <button class="btn-preset" data-preset="severe">Severe (High UPDRS)</button>
+            </div>
+
+            <div class="model-select-row">
+              <span class="toolbar-label">Operational Model:</span>
+              <select id="realModelSelect" class="clean-select" aria-label="Select Operational Model">
+                <option value="qnn">True QNN (Phase 24 · 4-Qubit PennyLane)</option>
+                <option value="vqc">Hybrid VQC (Phase 21 · 4-Qubit PennyLane)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- 12 Input Features Grid -->
+          <div class="inputs-grid" id="inputsGrid">
+            <!-- Populated by predictor.js -->
+          </div>
+        </div>
+
+        <!-- 2. UPLOAD REPORT MODE SECTION (Automated Analysis) -->
+        <div class="mode-section-wrap" id="uploadModeSection" style="display: none;">
+          <div class="upload-mode-toolbar">
+            <div class="model-select-row">
+              <span class="toolbar-label">Operational Model:</span>
+              <select id="realModelSelectUpload" class="clean-select" aria-label="Select Operational Model for Upload">
+                <option value="qnn">True QNN (Phase 24 · 4-Qubit PennyLane)</option>
+                <option value="vqc">Hybrid VQC (Phase 21 · 4-Qubit PennyLane)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Interactive Drag and Drop Zone -->
+          <div class="report-dropzone" id="reportDropzone">
+            <input type="file" id="reportFileInput" class="file-input-hidden" accept=".csv,.json,.txt" />
+            <div class="dropzone-icon-box">
+              <span class="dropzone-icon">⇪</span>
+            </div>
+            <div class="dropzone-title">Upload Patient Telemonitoring Report</div>
+            <p class="dropzone-desc">Drag and drop file here, or <span class="dropzone-browse">browse from computer</span></p>
+            <div class="dropzone-meta-pill">Supported Formats: .CSV · .JSON · .TXT Diagnostic Records</div>
+          </div>
+
+          <!-- 1-Click Sample Test Reports -->
+          <div class="sample-reports-bar">
+            <span class="sample-reports-label">Quick Test Sample Reports:</span>
+            <button type="button" class="btn-sample-report" data-sample="mild">
+              <span class="sample-icon">📄</span>
+              <span>Patient_04_Mild_UPDRS12.csv</span>
+            </button>
+            <button type="button" class="btn-sample-report" data-sample="severe">
+              <span class="sample-icon">📄</span>
+              <span>Patient_39_Severe_UPDRS34.json</span>
+            </button>
+          </div>
+
+          <!-- Extracted Report Analysis Summary -->
+          <div class="extracted-report-card" id="extractedReportCard" style="display: none;">
+            <div class="extracted-card-header">
+              <div class="report-meta-info">
+                <span class="report-file-name" id="reportFileName">patient_report.csv</span>
+                <span class="report-file-size" id="reportFileSize">1.2 KB</span>
+              </div>
+              <div class="report-status-badge success" id="reportStatusBadge">
+                <span class="status-dot"></span>
+                <span id="reportStatusText">12/12 ANOVA Biomarkers Verified</span>
+              </div>
+            </div>
+
+            <!-- Extracted Values Preview Grid -->
+            <div class="extracted-grid" id="extractedGrid">
+              <!-- Populated dynamically by predictor.js -->
+            </div>
+
+            <div class="extracted-action-strip">
+              <div class="extracted-note">All 12 acoustic & motor features extracted and standardized against Development Split.</div>
+              <button type="button" class="btn-primary" id="analyzeReportBtn">
+                <span>Analyze Report with Quantum Model</span>
+                <span>→</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="engine-action-bar">
+          <div class="disclaimer-text">
+            Research-use only. This system does not provide medical diagnosis or medical advice.
+          </div>
+          <button class="btn-primary" id="executeBtn">
+            <span>Execute Model Inference</span>
+            <span>→</span>
+          </button>
+        </div>
+
+        <!-- Real Output Display -->
+        <div class="inference-output-panel" id="outputPanel" style="display: none;">
+          <div class="output-header">
+            <span class="output-badge">LIVE INFERENCE RESULT</span>
+            <span class="backend-tag" id="backendTag">PennyLane default.qubit</span>
+          </div>
+
+          <div class="output-grid">
+            <div class="output-main-box">
+              <span class="res-meta-label">Predicted Severity Class</span>
+              <div class="res-class-name" id="resClassName">CLASS 0 · MILD</div>
+              <div class="res-sub-text" id="resClassSub">Unified Parkinson's Disease Rating Scale below high-severity threshold.</div>
+
+              <!-- Animated Probability Progress Bar -->
+              <div class="prob-bar-container">
+                <div class="prob-bar-track">
+                  <div class="prob-bar-fill" id="probBarFill" style="width: 0%;"></div>
+                </div>
+                <div class="prob-bar-labels">
+                  <span>Class 0 (Mild)</span>
+                  <span id="probBarVal" class="prob-bar-val">0.0%</span>
+                  <span>Class 1 (Severe)</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="output-metrics-box">
+              <div class="metric-line">
+                <span>Model Output Probability:</span>
+                <strong id="resProb">0.2450</strong>
+              </div>
+              <div class="metric-line">
+                <span>Confidence:</span>
+                <strong id="resConf">75.5%</strong>
+              </div>
+              <div class="metric-line">
+                <span>Raw Model Logit:</span>
+                <strong id="resLogit">-1.1254</strong>
+              </div>
+              <div class="metric-line">
+                <span>⟨Z⟩ Quantum Observable:</span>
+                <strong id="resQVal">-0.3218</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================================
+         7. RESEARCH LIMITATIONS
+         ======================================================================== -->
+    <section class="section-block" id="limitations">
+      <div class="section-header">
+        <h2 class="section-title">Research Limitations</h2>
+        <p class="section-lead">
+          Critical scientific considerations regarding current quantum hardware constraints and clinical translation.
+        </p>
+      </div>
+
+      <div class="limitations-three-grid">
+        <div class="limitation-box">
+          <span class="lim-num">01</span>
+          <h3 class="lim-title">Simulation-Based Quantum Execution</h3>
+          <p class="lim-text">
+            The quantum models are currently executed via classical state-vector simulators (<code>default.qubit</code>) rather than physical NISQ hardware with physical gate infidelities.
+          </p>
+        </div>
+
+        <div class="limitation-box">
+          <span class="lim-num">02</span>
+          <h3 class="lim-title">External Cohort Validation Required</h3>
+          <p class="lim-text">
+            While zero subject leakage was mathematically guaranteed across the 42 Oxford subjects, generalization to demographically diverse clinical cohorts requires prospective evaluation.
+          </p>
+        </div>
+
+        <div class="limitation-box">
+          <span class="lim-num">03</span>
+          <h3 class="lim-title">Research-Use Only</h3>
+          <p class="lim-text">
+            This platform is an academic comparative methodology benchmark. It is not approved by regulatory medical agencies and does not constitute a clinical diagnostic tool.
+          </p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ========================================================================
+         8. FOOTER
+         ======================================================================== -->
+  <footer class="site-footer">
+    <div class="page-wrapper">
+      <div class="footer-clean">
+        <div class="footer-brand">
+          <span class="f-title">QML-PD Research Platform</span>
+          <span class="f-sub">Neuroscience × AI × Quantum Computing</span>
+        </div>
+        <div class="footer-copy">
+          Simulation-based execution (default.qubit) · Academic Research Use Only · This system does not provide medical diagnosis or medical advice.
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script type="module" src="js/app.js?v=20260924_upload_v2"></script>
+</body>
+</html>
