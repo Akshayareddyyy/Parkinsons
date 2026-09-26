@@ -1,22 +1,9 @@
 /**
- * QUANTUM MACHINE LEARNING FOR PARKINSON'S DISEASE PREDICTION
- * Real Prediction Engine - Connects to Python PennyLane/PyTorch Backend
+ * QML-PD Research Platform - Live Prediction Engine Client
+ * Interacts with FastAPI Backend (/api/predict)
  */
 
-export const ANOVA12_FEATURES = [
-  { id: "motor_UPDRS", name: "motor_UPDRS", min: 5.0, max: 40.0, default: 21.3, step: 0.1, unit: "UPDRS" },
-  { id: "PPE", name: "PPE", min: 0.02, max: 0.73, default: 0.22, step: 0.01, unit: "Entropy" },
-  { id: "RPDE", name: "RPDE", min: 0.15, max: 0.95, default: 0.54, step: 0.01, unit: "Entropy" },
-  { id: "HNR", name: "HNR", min: 1.5, max: 38.0, default: 21.7, step: 0.1, unit: "dB" },
-  { id: "DFA", name: "DFA", min: 0.50, max: 0.88, default: 0.65, step: 0.01, unit: "Scaling" },
-  { id: "Jitter(Abs)", name: "Jitter(Abs)", min: 0.000003, max: 0.00045, default: 0.000044, step: 0.000001, unit: "µs" },
-  { id: "Jitter(%)", name: "Jitter(%)", min: 0.0008, max: 0.09, default: 0.0061, step: 0.0001, unit: "%" },
-  { id: "Jitter:RAP", name: "Jitter:RAP", min: 0.0003, max: 0.057, default: 0.0030, step: 0.0001, unit: "Ratio" },
-  { id: "Jitter:PPQ5", name: "Jitter:PPQ5", min: 0.0004, max: 0.049, default: 0.0031, step: 0.0001, unit: "Ratio" },
-  { id: "Jitter:DDP", name: "Jitter:DDP", min: 0.0010, max: 0.170, default: 0.0089, step: 0.0001, unit: "Ratio" },
-  { id: "age", name: "age", min: 36, max: 85, default: 65, step: 1, unit: "Years" },
-  { id: "sex", name: "sex", min: 0, max: 1, default: 1, step: 1, unit: "0:F, 1:M" }
-];
+import { ANOVA12_FEATURES } from './data.js';
 
 export const PRESETS = {
   mild: {
@@ -100,7 +87,8 @@ export const SAMPLE_REPORTS = {
 export class RealPredictor {
   constructor() {
     this.currentValues = {};
-    this.activeMode = 'manual'; // 'manual' or 'upload'
+    this.activeMode = 'manual';
+    this.apiBase = window.QML_API_BASE || '';
     this.initDefaults();
     this.initDOM();
   }
@@ -120,13 +108,11 @@ export class RealPredictor {
     this.outputPanel = document.getElementById('outputPanel');
     this.presetButtons = document.querySelectorAll('.btn-preset');
 
-    // Mode Switcher Elements
     this.modeManualBtn = document.getElementById('modeManualBtn');
     this.modeUploadBtn = document.getElementById('modeUploadBtn');
     this.manualSection = document.getElementById('manualModeSection');
     this.uploadSection = document.getElementById('uploadModeSection');
 
-    // Report Upload Elements
     this.dropzone = document.getElementById('reportDropzone');
     this.fileInput = document.getElementById('reportFileInput');
     this.sampleReportBtns = document.querySelectorAll('.btn-sample-report');
@@ -153,7 +139,7 @@ export class RealPredictor {
 
       box.innerHTML = `
         <div class="input-label-row">
-          <span class="input-name">${f.name}</span>
+          <span class="input-name" title="${f.role}">${f.name}</span>
           <span class="input-val-badge" id="val_${this.safeId(f.id)}">${this.formatVal(f.id, this.currentValues[f.id])}</span>
         </div>
         <input 
@@ -224,13 +210,11 @@ export class RealPredictor {
   }
 
   attachEvents() {
-    // Mode Switcher
     if (this.modeManualBtn && this.modeUploadBtn) {
       this.modeManualBtn.addEventListener('click', () => this.switchMode('manual'));
       this.modeUploadBtn.addEventListener('click', () => this.switchMode('upload'));
     }
 
-    // Synchronize Model Selectors
     if (this.modelSelect && this.modelSelectUpload) {
       this.modelSelect.addEventListener('change', () => {
         this.modelSelectUpload.value = this.modelSelect.value;
@@ -240,7 +224,6 @@ export class RealPredictor {
       });
     }
 
-    // Sliders
     ANOVA12_FEATURES.forEach(f => {
       const input = document.getElementById(`range_${this.safeId(f.id)}`);
       const badge = document.getElementById(`val_${this.safeId(f.id)}`);
@@ -250,15 +233,11 @@ export class RealPredictor {
           const num = parseFloat(e.target.value);
           this.currentValues[f.id] = num;
           badge.textContent = this.formatVal(f.id, num);
-          badge.classList.remove('val-bump');
-          void badge.offsetWidth;
-          badge.classList.add('val-bump');
           this.presetButtons.forEach(b => b.classList.remove('active'));
         });
       }
     });
 
-    // Presets
     this.presetButtons.forEach(btn => {
       btn.addEventListener('click', () => {
         const key = btn.dataset.preset;
@@ -282,12 +261,10 @@ export class RealPredictor {
   attachUploadEvents() {
     if (!this.dropzone || !this.fileInput) return;
 
-    // Click to open file dialog
     this.dropzone.addEventListener('click', () => {
       this.fileInput.click();
     });
 
-    // File selected via input
     this.fileInput.addEventListener('change', (e) => {
       const file = e.target.files && e.target.files[0];
       if (file) {
@@ -295,7 +272,6 @@ export class RealPredictor {
       }
     });
 
-    // Drag and drop events
     ['dragenter', 'dragover'].forEach(name => {
       this.dropzone.addEventListener(name, (e) => {
         e.preventDefault();
@@ -320,7 +296,6 @@ export class RealPredictor {
       }
     });
 
-    // 1-Click Sample Test Reports
     this.sampleReportBtns.forEach(btn => {
       btn.addEventListener('click', () => {
         const sampleKey = btn.dataset.sample;
@@ -368,7 +343,6 @@ export class RealPredictor {
   processReportText(text, filename, sizeStr) {
     const extracted = {};
 
-    // 1. Try JSON parsing (direct or nested)
     try {
       const json = JSON.parse(text);
       const dataObj = json.biomarkers || json.features || json.data || json;
@@ -380,11 +354,9 @@ export class RealPredictor {
         }
       });
     } catch (_) {
-      // 2. Try CSV or Delimited Key-Value Text Parsing
       const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
 
       if (lines.length >= 2 && lines[0].includes(',')) {
-        // Standard CSV with header row and value row
         const headers = lines[0].split(',').map(h => h.trim().replace(/^["']|["']$/g, ''));
         const values = lines[1].split(',').map(v => v.trim().replace(/^["']|["']$/g, ''));
 
@@ -397,7 +369,6 @@ export class RealPredictor {
         });
       }
 
-      // Regex Fallback for vertical reports (e.g. "motor_UPDRS: 24.3")
       ANOVA12_FEATURES.forEach(f => {
         if (extracted[f.id] === undefined) {
           const escapedName = f.name.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
@@ -410,7 +381,6 @@ export class RealPredictor {
       });
     }
 
-    // Count directly extracted vs default fallback
     let extractedCount = 0;
     ANOVA12_FEATURES.forEach(f => {
       if (extracted[f.id] !== undefined && !isNaN(extracted[f.id])) {
@@ -420,11 +390,8 @@ export class RealPredictor {
       }
     });
 
-    // Update internal state & sync sliders
     this.currentValues = { ...extracted };
     this.syncSlidersWithValues();
-
-    // Render Extracted Report Card
     this.renderExtractedCard(filename, sizeStr, extracted, extractedCount);
   }
 
@@ -434,12 +401,7 @@ export class RealPredictor {
       const input = document.getElementById(`range_${this.safeId(f.id)}`);
       const badge = document.getElementById(`val_${this.safeId(f.id)}`);
       if (input) input.value = val;
-      if (badge) {
-        badge.textContent = this.formatVal(f.id, val);
-        badge.classList.remove('val-bump');
-        void badge.offsetWidth;
-        badge.classList.add('val-bump');
-      }
+      if (badge) badge.textContent = this.formatVal(f.id, val);
     });
   }
 
@@ -455,7 +417,7 @@ export class RealPredictor {
         this.reportStatusText.textContent = '12/12 ANOVA Biomarkers Verified';
       } else {
         this.reportStatusBadge.className = 'report-status-badge warning';
-        this.reportStatusText.textContent = `${extractedCount}/12 Biomarkers Extracted · ${12 - extractedCount} Default(s) Applied`;
+        this.reportStatusText.textContent = `${extractedCount}/12 Extracted · ${12 - extractedCount} Default(s) Applied`;
       }
     }
 
@@ -465,13 +427,12 @@ export class RealPredictor {
       item.className = 'extracted-item';
       item.innerHTML = `
         <span class="extracted-k">${f.name}:</span>
-        <span class="extracted-v">${this.formatVal(f.id, extracted[f.id])} <small style="color:var(--text-muted);font-size:0.6rem;">${f.unit}</small></span>
+        <span class="extracted-v">${this.formatVal(f.id, extracted[f.id])} <small class="text-muted">${f.unit}</small></span>
       `;
       this.extractedGrid.appendChild(item);
     });
 
     this.extractedCard.style.display = 'block';
-    this.extractedCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
   loadPreset(key) {
@@ -483,12 +444,7 @@ export class RealPredictor {
       const input = document.getElementById(`range_${this.safeId(id)}`);
       const badge = document.getElementById(`val_${this.safeId(id)}`);
       if (input) input.value = val;
-      if (badge) {
-        badge.textContent = this.formatVal(id, val);
-        badge.classList.remove('val-bump');
-        void badge.offsetWidth;
-        badge.classList.add('val-bump');
-      }
+      if (badge) badge.textContent = this.formatVal(id, val);
     });
   }
 
@@ -508,7 +464,8 @@ export class RealPredictor {
     }
 
     try {
-      const response = await fetch('/api/predict', {
+      const url = `${this.apiBase}/api/predict`;
+      const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -526,7 +483,7 @@ export class RealPredictor {
 
     } catch (err) {
       console.error('Inference error:', err);
-      alert(`Inference failed: ${err.message}. Please ensure the backend server is running.`);
+      alert(`Inference failed: ${err.message}. Please ensure the backend is running.`);
     } finally {
       if (this.executeBtn) {
         this.executeBtn.disabled = false;
@@ -558,7 +515,7 @@ export class RealPredictor {
 
     if (className) {
       className.textContent = isMild ? 'CLASS 0 · MILD' : 'CLASS 1 · MODERATE-TO-SEVERE';
-      className.className = `res-class-name ${isMild ? '' : 'severe'}`;
+      className.className = `res-class-name ${isMild ? 'mild' : 'severe'}`;
     }
 
     if (classSub) {
@@ -573,14 +530,13 @@ export class RealPredictor {
     if (qVal) qVal.textContent = data.quantum_expval.toFixed(4);
     if (backendTag) backendTag.textContent = `${data.model} · ${data.inference_type}`;
 
-    // Animate probability progress bar
     if (probBarFill && probBarVal) {
       const pct = (data.probability * 100).toFixed(1);
       probBarFill.style.width = '0%';
       setTimeout(() => {
         probBarFill.style.width = `${pct}%`;
         probBarVal.textContent = `${pct}%`;
-      }, 60);
+      }, 50);
     }
 
     this.outputPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });

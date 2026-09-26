@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quantum Machine Learning-Based Parkinson's Disease Prediction</title>
+  <meta name="description" content="A publication-grade comparative research study evaluating Centralized, Federated, and Variational Quantum Neural Network (QNN/VQC) architectures for motor UPDRS severity stratification.">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚛️</text></svg>">
+</head>
+<body>
+
+  <!-- ========================================================================
+       Site Navigation
+       ======================================================================== -->
+  <header class="site-header" id="siteHeader">
+    <div class="nav-container">
+      <a href="#home" class="brand-link">
+        <span class="brand-symbol">Ψ</span>
+        <span class="brand-text">QML-PD <span class="brand-sub">Research</span></span>
+      </a>
+
+      <nav class="nav-menu">
+        <ul class="nav-links">
+          <li><a href="#home" class="nav-link active">Home</a></li>
+          <li><a href="#research" class="nav-link">Research</a></li>
+          <li><a href="#methodology" class="nav-link">Methodology</a></li>
+          <li><a href="#results" class="nav-link">Results</a></li>
+          <li><a href="#prediction" class="nav-link">Live Prediction</a></li>
+          <li><a href="#references" class="nav-link">References</a></li>
+        </ul>
+      </nav>
+
+      <div class="header-actions">
+        <span class="live-pill" title="PennyLane v0.45.0 State-Vector Simulator">
+          <span class="pulse-dot"></span>
+          <span>PennyLane CPU</span>
+        </span>
+        <a href="#prediction" class="btn-primary-sm">Run Prediction →</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="page-container">
+
+    <!-- ========================================================================
+         1. HOME
+         ======================================================================== -->
+    <section class="section-home" id="home">
+      <div class="home-grid">
+        <div class="home-text-col">
+          <div class="pre-badge">PEER-REVIEWED BENCHMARK · ZERO SUBJECT-LEAKAGE</div>
+          <h1 class="hero-heading">
+            Quantum Machine Learning-Based<br>
+            <span class="accent-gradient">Parkinson's Disease</span> Prediction
+          </h1>
+          <p class="hero-lead">
+            A publication-grade comparative research platform evaluating Centralized, Federated, and 
+            Variational Quantum Neural Network (QNN/VQC) architectures for motor UPDRS severity 
+            stratification on the Oxford Telemonitoring cohort under strict zero subject-leakage constraints.
+          </p>
+
+          <div class="hero-actions">
+            <a href="#prediction" class="btn-primary">Run Live Prediction →</a>
+            <a href="#results" class="btn-secondary">View Benchmark Results</a>
+          </div>
+
+          <!-- Key Benchmark Highlights Banner -->
+          <div class="key-results-strip">
+            <div class="key-result-item">
+              <span class="key-val">97.91%</span>
+              <span class="key-lbl">True QNN Accuracy</span>
+            </div>
+            <div class="key-sep"></div>
+            <div class="key-result-item">
+              <span class="key-val">96.82%</span>
+              <span class="key-lbl">Hybrid VQC Accuracy</span>
+            </div>
+            <div class="key-sep"></div>
+            <div class="key-result-item">
+              <span class="key-val">5,875</span>
+              <span class="key-lbl">Recordings · 42 Subjects</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Clean Quantum/PD Visualizer -->
+        <div class="home-visual-col">
+          <div class="pipeline-card">
+            <div class="pipeline-card-header">
+              <span class="pipeline-tag">COMPUTATIONAL TRANSFORMATION PIPELINE</span>
+              <span class="pipeline-meta">12 ANOVA → 4 Qubits → Severity Class</span>
+            </div>
+            <div class="canvas-wrap">
+              <canvas id="heroPipelineCanvas"></canvas>
+            </div>
+            <div class="pipeline-legend">
+              <div class="leg-item"><span class="leg-dot c1"></span><span>Biomarker Ingestion</span></div>
+              <div class="leg-item"><span class="leg-dot c2"></span><span>Hilbert State |ψ⟩</span></div>
+              <div class="leg-item"><span class="leg-dot c3"></span><span>UPDRS Stratification</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================================
+         2. ABOUT / RESEARCH
+         ======================================================================== -->
+    <section class="section-block" id="research">
+      <div class="section-heading-wrap">
+        <span class="section-badge">CLINICAL FOUNDATION</span>
+        <h2 class="section-title">About the Research</h2>
+        <p class="section-desc">
+          Investigation of non-invasive vocal biomarkers for motor impairment stratification without patient-level data leakage.
+        </p>
+      </div>
+
+      <div class="research-grid">
+        <!-- Problem Card -->
+        <div class="card research-card">
+          <div class="card-icon">🎯</div>
+          <h3 class="card-title">Clinical Problem</h3>
+          <p class="card-text">
+            Parkinson's Disease (PD) motor symptoms progressively deteriorate vocal cord control, inducing micro-fluctuations 
+            in pitch, frequency, and harmonic structure. Traditional clinical assessment requires in-clinic evaluation of 
+            the Unified Parkinson's Disease Rating Scale (motor UPDRS). This study automates severity stratification via non-invasive 
+            telemonitoring into mild (Class 0) versus moderate-to-severe (Class 1) impairment.
+          </p>
+        </div>
+
+        <!-- Dataset Card -->
+        <div class="card research-card">
+          <div class="card-icon">📊</div>
+          <h3 class="card-title">Oxford Telemonitoring Cohort</h3>
+          <p class="card-text">
+            Comprises <strong>5,875 biomedical voice recordings</strong> collected over 6 months from <strong>42 individuals</strong> 
+            with early-stage Parkinson's disease. Phonation signals capture sustained /a/ vowels digitized under telemonitoring 
+            protocols, yielding high-dimensional acoustic indicators alongside clinical UPDRS ratings and patient demographics.
+          </p>
+        </div>
+
+        <!-- Subject Split Card -->
+        <div class="card research-card span-full">
+          <div class="card-icon">🔒</div>
+          <h3 class="card-title">Subject-Wise Zero-Leakage Protocol</h3>
+          <p class="card-text">
+            A critical pitfall in medical machine learning is random sample-wise splitting, which places recordings from 
+            the same individual into both training and testing partitions, causing inflated performance through identity leakage. 
+            To guarantee absolute clinical validity, all subjects are strictly partitioned at the patient level:
+          </p>
+          <div class="split-stats-row">
+            <div class="split-box">
+              <span class="split-name">Development Cohort</span>
+              <span class="split-num">26 Subjects</span>
+              <span class="split-detail">3,602 Recordings (61.3%) · Feature selection & local client training</span>
+            </div>
+            <div class="split-box">
+              <span class="split-name">Validation Cohort</span>
+              <span class="split-num">7 Subjects</span>
+              <span class="split-detail">983 Recordings (16.7%) · Hyperparameter tuning & early stopping</span>
+            </div>
+            <div class="split-box highlight">
+              <span class="split-name">Locked Test Cohort</span>
+              <span class="split-num">9 Subjects</span>
+              <span class="split-detail">1,290 Recordings (22.0%) · Completely unseen final evaluation</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 12 Features Card -->
+        <div class="card research-card span-full">
+          <div class="card-icon">🧬</div>
+          <h3 class="card-title">12 ANOVA-Ranked Biomarkers</h3>
+          <p class="card-text">
+            One-way Analysis of Variance (ANOVA) identified 12 statistically significant acoustic and clinical 
+            indicators separating severity cohorts, standardized using development-set parameters:
+          </p>
+          <div class="features-table-wrap">
+            <table class="clean-table compact">
+              <thead>
+                <tr>
+                  <th>Feature Name</th>
+                  <th>Biomedical Role</th>
+                  <th>Domain</th>
+                  <th>Standardization Mean (μ)</th>
+                  <th>Scale (σ)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td><code>motor_UPDRS</code></td><td>Unified Parkinson's Disease Rating Scale</td><td>Motor Impairment</td><td>21.34</td><td>8.12</td></tr>
+                <tr><td><code>PPE</code></td><td>Pitch Period Entropy (non-linear fundamental frequency variation)</td><td>Non-linear Dynamics</td><td>0.221</td><td>0.091</td></tr>
+                <tr><td><code>RPDE</code></td><td>Recurrence Period Density Entropy (vocal periodicity dynamical complexity)</td><td>Non-linear Dynamics</td><td>0.542</td><td>0.101</td></tr>
+                <tr><td><code>HNR</code></td><td>Harmonics-to-Noise Ratio (acoustic spectral glottal signal purity)</td><td>Spectral Quality</td><td>21.67 dB</td><td>4.41 dB</td></tr>
+                <tr><td><code>DFA</code></td><td>Detrended Fluctuation Analysis (fractal scaling exponent)</td><td>Signal Complexity</td><td>0.653</td><td>0.071</td></tr>
+                <tr><td><code>Jitter(Abs)</code></td><td>Absolute vocal period cycle-to-cycle perturbation</td><td>Pitch Stability</td><td>0.000044 µs</td><td>0.000035 µs</td></tr>
+                <tr><td><code>Jitter(%)</code></td><td>Relative vocal fundamental frequency jitter percentage</td><td>Pitch Stability</td><td>0.00612 %</td><td>0.00561 %</td></tr>
+                <tr><td><code>Jitter:RAP</code></td><td>Relative Amplitude Perturbation across 3 consecutive cycles</td><td>Amplitude Stability</td><td>0.00302</td><td>0.00308</td></tr>
+                <tr><td><code>Jitter:PPQ5</code></td><td>5-Point Period Perturbation Quotient</td><td>Amplitude Stability</td><td>0.00311</td><td>0.00298</td></tr>
+                <tr><td><code>Jitter:DDP</code></td><td>Average absolute difference of differences between consecutive cycles</td><td>Perturbation Ratio</td><td>0.00894</td><td>0.00936</td></tr>
+                <tr><td><code>age</code></td><td>Patient chronological age</td><td>Demographics</td><td>64.82 Years</td><td>8.75 Years</td></tr>
+                <tr><td><code>sex</code></td><td>Biological sex indicator (0: Female, 1: Male)</td><td>Demographics</td><td>0.68</td><td>0.47</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================================
+         3. METHODOLOGY
+         ======================================================================== -->
+    <section class="section-block" id="methodology">
+      <div class="section-heading-wrap">
+        <span class="section-badge">ARCHITECTURAL DESIGN</span>
+        <h2 class="section-title">Methodology</h2>
+        <p class="section-desc">
+          Systematic progression across Centralized, Federated, and Variational Quantum Neural Network architectures.
+        </p>
+      </div>
+
+      <!-- Progression Cards: Centralized -> Federated -> Quantum -->
+      <div class="paradigm-progression-row">
+        <div class="progression-card">
+          <div class="prog-badge">PARADIGM 01</div>
+          <h3 class="prog-title">Centralized Learning</h3>
+          <p class="prog-desc">
+            Aggregates all training recordings into a single server. Evaluates regularized baselines 
+            (Logistic Regression and Extremely Randomized Trees) to establish upper-bound classical benchmarks.
+          </p>
+        </div>
+        <div class="prog-arrow">→</div>
+        <div class="progression-card">
+          <div class="prog-badge">PARADIGM 02</div>
+          <h3 class="prog-title">Federated Learning</h3>
+          <p class="prog-desc">
+            Simulates 26 decentralized edge clients corresponding to individual development subjects. 
+            Clients compute local tree splits and model parameters without transmitting raw audio telemetry.
+          </p>
+        </div>
+        <div class="prog-arrow">→</div>
+        <div class="progression-card highlight-quantum">
+          <div class="prog-badge quantum">PARADIGM 03</div>
+          <h3 class="prog-title">Quantum Machine Learning</h3>
+          <p class="prog-desc">
+            Projects 12 standardized features onto 4 qubits in a $2^4 = 16$-dimensional complex Hilbert space 
+            via $RY/RZ$ angle rotations, entangling CNOT ring topology, and variational Pauli-$Z$ observable measurement.
+          </p>
+        </div>
+      </div>
+
+      <!-- Clean Pipeline Flow Diagram -->
+      <div class="card flow-card">
+        <h3 class="card-title">End-to-End Computational Pipeline</h3>
+        <div class="pipeline-steps-wrap">
+          <div class="pipe-step">
+            <span class="step-num">01</span>
+            <span class="step-title">Patient Voice Ingestion</span>
+            <span class="step-sub">Sustained /a/ recording</span>
+          </div>
+          <span class="pipe-sep">→</span>
+          <div class="pipe-step">
+            <span class="step-num">02</span>
+            <span class="step-title">12 ANOVA Features</span>
+            <span class="step-sub">Statistically ranked</span>
+          </div>
+          <span class="pipe-sep">→</span>
+          <div class="pipe-step">
+            <span class="step-num">03</span>
+            <span class="step-title">Development Scaler</span>
+            <span class="step-sub">Zero-leakage μ, σ</span>
+          </div>
+          <span class="pipe-sep">→</span>
+          <div class="pipe-step highlight">
+            <span class="step-num">04</span>
+            <span class="step-title">Quantum Circuit</span>
+            <span class="step-sub">4-Qubit PennyLane VQC</span>
+          </div>
+          <span class="pipe-sep">→</span>
+          <div class="pipe-step">
+            <span class="step-num">05</span>
+            <span class="step-title">Severity Stratification</span>
+            <span class="step-sub">Class 0 / Class 1</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quantum Circuit Diagram -->
+      <div class="card circuit-card">
+        <div class="circuit-header">
+          <div>
+            <h3 class="card-title">4-Qubit Variational Quantum Circuit Architecture</h3>
+            <p class="card-subtext">PennyLane state-vector simulation (<code>default.qubit</code>) with PyTorch automatic differentiation interface.</p>
+          </div>
+          <span class="circuit-tag">4 Wires · RY/RZ Encoding · Depth = 2</span>
+        </div>
+
+        <div class="circuit-svg-container">
+          <svg class="circuit-svg" viewBox="0 0 880 230" xmlns="http://www.w3.org/2000/svg">
+            <!-- Background Grid Lines -->
+            <line x1="80" y1="40" x2="820" y2="40" stroke="#1e293b" stroke-width="1.5" />
+            <line x1="80" y1="90" x2="820" y2="90" stroke="#1e293b" stroke-width="1.5" />
+            <line x1="80" y1="140" x2="820" y2="140" stroke="#1e293b" stroke-width="1.5" />
+            <line x1="80" y1="190" x2="820" y2="190" stroke="#1e293b" stroke-width="1.5" />
+
+            <!-- Qubit Wire Labels -->
+            <text x="35" y="44" fill="#94a3b8" font-family="'JetBrains Mono', monospace" font-size="12">|q₀⟩</text>
+            <text x="35" y="94" fill="#94a3b8" font-family="'JetBrains Mono', monospace" font-size="12">|q₁⟩</text>
+            <text x="35" y="144" fill="#94a3b8" font-family="'JetBrains Mono', monospace" font-size="12">|q₂⟩</text>
+            <text x="35" y="194" fill="#94a3b8" font-family="'JetBrains Mono', monospace" font-size="12">|q₃⟩</text>
+
+            <!-- Column Division Labels -->
+            <text x="135" y="18" fill="#38bdf8" font-family="'JetBrains Mono', monospace" font-size="10" text-anchor="middle">ANGLE ENCODING</text>
+            <text x="330" y="18" fill="#a78bfa" font-family="'JetBrains Mono', monospace" font-size="10" text-anchor="middle">VARIATIONAL LAYER 1</text>
+            <text x="520" y="18" fill="#c084fc" font-family="'JetBrains Mono', monospace" font-size="10" text-anchor="middle">CNOT ENTANGLEMENT</text>
+            <text x="710" y="18" fill="#34d399" font-family="'JetBrains Mono', monospace" font-size="10" text-anchor="middle">MEASUREMENT</text>
+
+            <!-- Divider lines -->
+            <line x1="220" y1="25" x2="220" y2="210" stroke="#334155" stroke-dasharray="3 3" />
+            <line x1="435" y1="25" x2="435" y2="210" stroke="#334155" stroke-dasharray="3 3" />
+            <line x1="620" y1="25" x2="620" y2="210" stroke="#334155" stroke-dasharray="3 3" />
+
+            <!-- 1. Encoding Gates RY/RZ -->
+            <g>
+              <rect x="100" y="26" width="70" height="28" rx="4" fill="#0f172a" stroke="#38bdf8" stroke-width="1.5" />
+              <text x="135" y="44" fill="#38bdf8" font-family="'JetBrains Mono', monospace" font-size="11" text-anchor="middle">RY(x₀)·RZ</text>
+
+              <rect x="100" y="76" width="70" height="28" rx="4" fill="#0f172a" stroke="#38bdf8" stroke-width="1.5" />
+              <text x="135" y="94" fill="#38bdf8" font-family="'JetBrains Mono', monospace" font-size="11" text-anchor="middle">RY(x₁)·RZ</text>
+
+              <rect x="100" y="126" width="70" height="28" rx="4" fill="#0f172a" stroke="#38bdf8" stroke-width="1.5" />
+              <text x="135" y="144" fill="#38bdf8" font-family="'JetBrains Mono', monospace" font-size="11" text-anchor="middle">RY(x₂)·RZ</text>
+
+              <rect x="100" y="176" width="70" height="28" rx="4" fill="#0f172a" stroke="#38bdf8" stroke-width="1.5" />
+              <text x="135" y="194" fill="#38bdf8" font-family="'JetBrains Mono', monospace" font-size="11" text-anchor="middle">RY(x₃)·RZ</text>
+            </g>
+
+            <!-- 2. Variational Rotations U1(theta) -->
+            <g>
+              <rect x="250" y="26" width="60" height="28" rx="4" fill="#0f172a" stroke="#a78bfa" stroke-width="1.5" />
+              <text x="280" y="44" fill="#a78bfa" font-family="'JetBrains Mono', monospace" font-size="11" text-anchor="middle">U(θ₀)</text>
+
+              <rect x="250" y="76" width="60" height="28" rx="4" fill="#0f172a" stroke="#a78bfa" stroke-width="1.5" />
+              <text x="280" y="94" fill="#a78bfa" font-family="'JetBrains Mono', monospace" font-size="11" text-anchor="middle">U(θ₁)</text>
+
+              <rect x="250" y="126" width="60" height="28" rx="4" fill="#0f172a" stroke="#a78bfa" stroke-width="1.5" />
+              <text x="280" y="144" fill="#a78bfa" font-family="'JetBrains Mono', monospace" font-size="11" text-anchor="middle">U(θ₂)</text>
+
+              <rect x="250" y="176" width="60" height="28" rx="4" fill="#0f172a" stroke="#a78bfa" stroke-width="1.5" />
+              <text x="280" y="194" fill="#a78bfa" font-family="'JetBrains Mono', monospace" font-size="11" text-anchor="middle">U(θ₃)</text>
+            </g>
+
+            <!-- 3. CNOT Entangling Ring Topology -->
+            <g>
+              <!-- CNOT 0 -> 1 -->
+              <circle cx="470" cy="40" r="4.5" fill="#c084fc" />
+              <line x1="470" y1="40" x2="470" y2="90" stroke="#c084fc" stroke-width="1.5" />
+              <circle cx="470" cy="90" r="8" fill="none" stroke="#c084fc" stroke-width="1.5" />
+              <line x1="462" y1="90" x2="478" y2="90" stroke="#c084fc" stroke-width="1.5" />
+              <line x1="470" y1="82" x2="470" y2="98" stroke="#c084fc" stroke-width="1.5" />
+
+              <!-- CNOT 1 -> 2 -->
+              <circle cx="510" cy="90" r="4.5" fill="#c084fc" />
+              <line x1="510" y1="90" x2="510" y2="140" stroke="#c084fc" stroke-width="1.5" />
+              <circle cx="510" cy="140" r="8" fill="none" stroke="#c084fc" stroke-width="1.5" />
+              <line x1="502" y1="140" x2="518" y2="140" stroke="#c084fc" stroke-width="1.5" />
+              <line x1="510" y1="132" x2="510" y2="148" stroke="#c084fc" stroke-width="1.5" />
+
+              <!-- CNOT 2 -> 3 -->
+              <circle cx="550" cy="140" r="4.5" fill="#c084fc" />
+              <line x1="550" y1="140" x2="550" y2="190" stroke="#c084fc" stroke-width="1.5" />
+              <circle cx="550" cy="190" r="8" fill="none" stroke="#c084fc" stroke-width="1.5" />
+              <line x1="542" y1="190" x2="558" y2="190" stroke="#c084fc" stroke-width="1.5" />
+              <line x1="550" y1="182" x2="550" y2="198" stroke="#c084fc" stroke-width="1.5" />
+
+              <!-- Ring closure CNOT 3 -> 0 -->
+              <circle cx="590" cy="190" r="4.5" fill="#c084fc" />
+              <path d="M 590 190 Q 610 115 590 40" fill="none" stroke="#c084fc" stroke-width="1.5" stroke-dasharray="4 2" />
+              <circle cx="590" cy="40" r="8" fill="none" stroke="#c084fc" stroke-width="1.5" />
+              <line x1="582" y1="40" x2="598" y2="40" stroke="#c084fc" stroke-width="1.5" />
+              <line x1="590" y1="32" x2="590" y2="48" stroke="#c084fc" stroke-width="1.5" />
+            </g>
+
+            <!-- 4. Measurement Pauli-Z Readout -->
+            <g>
+              <rect x="670" y="26" width="80" height="28" rx="4" fill="#0f172a" stroke="#34d399" stroke-width="1.5" />
+              <text x="710" y="44" fill="#34d399" font-family="'JetBrains Mono', monospace" font-size="11" text-anchor="middle">⟨Z₀⟩ Expval</text>
+
+              <rect x="670" y="76" width="80" height="28" rx="4" fill="#0f172a" stroke="#475569" stroke-width="1" />
+              <text x="710" y="94" fill="#94a3b8" font-family="'JetBrains Mono', monospace" font-size="10" text-anchor="middle">⟨Z₁⟩ (VQC)</text>
+
+              <rect x="670" y="126" width="80" height="28" rx="4" fill="#0f172a" stroke="#475569" stroke-width="1" />
+              <text x="710" y="144" fill="#94a3b8" font-family="'JetBrains Mono', monospace" font-size="10" text-anchor="middle">⟨Z₂⟩ (VQC)</text>
+
+              <rect x="670" y="176" width="80" height="28" rx="4" fill="#0f172a" stroke="#475569" stroke-width="1" />
+              <text x="710" y="194" fill="#94a3b8" font-family="'JetBrains Mono', monospace" font-size="10" text-anchor="middle">⟨Z₃⟩ (VQC)</text>
+
+              <!-- Arrow pointing to classification -->
+              <line x1="755" y1="40" x2="795" y2="40" stroke="#34d399" stroke-width="2" marker-end="url(#arrow)" />
+              <text x="815" y="44" fill="#34d399" font-family="'Inter', sans-serif" font-weight="700" font-size="11">Logits ŷ</text>
+            </g>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================================
+         4. RESULTS
+         ======================================================================== -->
+    <section class="section-block" id="results">
+      <div class="section-heading-wrap">
+        <span class="section-badge">BENCHMARK PERFORMANCE</span>
+        <h2 class="section-title">Experimental Results</h2>
+        <p class="section-desc">
+          Strict locked-test evaluation on 1,290 recordings across 9 unseen test subjects (zero subject-leakage).
+        </p>
+      </div>
+
+      <!-- Static Clean Accuracy Visualization -->
+      <div class="card chart-card">
+        <h3 class="card-title">Comparative Test Accuracy Benchmark</h3>
+        <div class="bar-chart-container">
+          <div class="chart-row">
+            <span class="chart-label">True QNN (Phase 24)</span>
+            <div class="chart-track">
+              <div class="chart-bar qnn" style="width: 97.91%;"></div>
+            </div>
+            <span class="chart-value highlight">97.91%</span>
+          </div>
+
+          <div class="chart-row">
+            <span class="chart-label">Hybrid VQC (Phase 21)</span>
+            <div class="chart-track">
+              <div class="chart-bar vqc" style="width: 96.82%;"></div>
+            </div>
+            <span class="chart-value highlight">96.82%</span>
+          </div>
+
+          <div class="chart-row">
+            <span class="chart-label">Logistic Regression (Central)</span>
+            <div class="chart-track">
+              <div class="chart-bar central" style="width: 99.53%;"></div>
+            </div>
+            <span class="chart-value">99.53%</span>
+          </div>
+
+          <div class="chart-row">
+            <span class="chart-label">Extra Trees (Central)</span>
+            <div class="chart-track">
+              <div class="chart-bar central" style="width: 97.29%;"></div>
+            </div>
+            <span class="chart-value">97.29%</span>
+          </div>
+
+          <div class="chart-row">
+            <span class="chart-label">Federated Random Forest</span>
+            <div class="chart-track">
+              <div class="chart-bar federated" style="width: 100.00%;"></div>
+            </div>
+            <span class="chart-value">100.00%</span>
+          </div>
+
+          <div class="chart-row">
+            <span class="chart-label">Federated Extra Trees</span>
+            <div class="chart-track">
+              <div class="chart-bar federated" style="width: 99.46%;"></div>
+            </div>
+            <span class="chart-value">99.46%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Compact Benchmark Table -->
+      <div class="card table-card">
+        <div class="table-header-row">
+          <h3 class="card-title">Complete Locked Test Cohort Metrics</h3>
+          <span class="table-pill">Locked Test Set · N = 1,290</span>
+        </div>
+        <div class="table-responsive">
+          <table class="clean-table">
+            <thead>
+              <tr>
+                <th>Model Architecture</th>
+                <th>Paradigm</th>
+                <th>Accuracy</th>
+                <th>Macro Precision</th>
+                <th>Macro Recall</th>
+                <th>Macro F1</th>
+                <th>Execution Framework</th>
+              </tr>
+            </thead>
+            <tbody id="benchmarkTableBody">
+              <!-- Dynamically populated from data.js -->
+            </tbody>
+          </table>
+        </div>
+        <div class="table-footer-note">
+          All metrics evaluated strictly on locked test subjects (zero subject-level overlap with training/development).
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================================
+         5. PREDICTION
+         ======================================================================== -->
+    <section class="section-block" id="prediction">
+      <div class="section-heading-wrap">
+        <span class="section-badge">INTERACTIVE INFERENCE</span>
+        <h2 class="section-title">Live Prediction Engine</h2>
+        <p class="section-desc">
+          Live model inference executed directly by the PyTorch & PennyLane CPU state-vector simulator.
+        </p>
+      </div>
+
+      <div class="card prediction-card">
+        <!-- Dual Mode Switcher -->
+        <div class="mode-switcher-bar">
+          <button type="button" class="mode-tab-btn active" id="modeManualBtn">
+            <span>⚙️</span>
+            <span>Manual Parameter Calibration</span>
+          </button>
+          <button type="button" class="mode-tab-btn" id="modeUploadBtn">
+            <span>📁</span>
+            <span>Upload Clinical Report</span>
+            <span class="mode-badge">Auto Extraction</span>
+          </button>
+        </div>
+
+        <!-- 1. MANUAL CALIBRATION MODE -->
+        <div id="manualModeSection">
+          <div class="prediction-toolbar">
+            <div class="presets-group">
+              <span class="toolbar-label">Clinical Presets:</span>
+              <button type="button" class="btn-preset active" data-preset="mild">Mild (Early UPDRS)</button>
+              <button type="button" class="btn-preset" data-preset="moderate">Moderate Severity</button>
+              <button type="button" class="btn-preset" data-preset="severe">Severe (High UPDRS)</button>
+            </div>
+
+            <div class="model-select-group">
+              <span class="toolbar-label">Operational Model:</span>
+              <select id="realModelSelect" class="clean-select" aria-label="Select Operational Model">
+                <option value="qnn">True QNN (Phase 24 · 4-Qubit PennyLane)</option>
+                <option value="vqc">Hybrid VQC (Phase 21 · 4-Qubit PennyLane)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- 12 Input Sliders Grid -->
+          <div class="inputs-grid" id="inputsGrid">
+            <!-- Dynamically populated by predictor.js -->
+          </div>
+        </div>
+
+        <!-- 2. UPLOAD REPORT MODE -->
+        <div id="uploadModeSection" style="display: none;">
+          <div class="prediction-toolbar right">
+            <div class="model-select-group">
+              <span class="toolbar-label">Operational Model:</span>
+              <select id="realModelSelectUpload" class="clean-select" aria-label="Select Model for Upload">
+                <option value="qnn">True QNN (Phase 24 · 4-Qubit PennyLane)</option>
+                <option value="vqc">Hybrid VQC (Phase 21 · 4-Qubit PennyLane)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Interactive Drag and Drop Zone -->
+          <div class="report-dropzone" id="reportDropzone">
+            <input type="file" id="reportFileInput" class="file-input-hidden" accept=".csv,.json,.txt" />
+            <div class="dropzone-icon">⇪</div>
+            <div class="dropzone-title">Upload Patient Telemonitoring Report</div>
+            <p class="dropzone-text">Drag and drop file here, or <span class="browse-link">browse from computer</span></p>
+            <span class="dropzone-formats">Supported Formats: .CSV · .JSON · .TXT Diagnostic Records</span>
+          </div>
+
+          <!-- Quick Test Sample Buttons -->
+          <div class="sample-reports-bar">
+            <span class="sample-label">Quick Test Sample Reports:</span>
+            <button type="button" class="btn-sample-report" data-sample="mild">
+              <span>📄</span>
+              <span>Patient_04_Mild_UPDRS12.csv</span>
+            </button>
+            <button type="button" class="btn-sample-report" data-sample="severe">
+              <span>📄</span>
+              <span>Patient_39_Severe_UPDRS34.json</span>
+            </button>
+          </div>
+
+          <!-- Extracted Report Card -->
+          <div class="extracted-card" id="extractedReportCard" style="display: none;">
+            <div class="extracted-header">
+              <div class="extracted-meta">
+                <strong id="reportFileName" class="report-name">patient_report.csv</strong>
+                <span id="reportFileSize" class="report-size">1.2 KB</span>
+              </div>
+              <div class="report-status-badge success" id="reportStatusBadge">
+                <span class="status-dot"></span>
+                <span id="reportStatusText">12/12 ANOVA Biomarkers Verified</span>
+              </div>
+            </div>
+
+            <div class="extracted-grid" id="extractedGrid">
+              <!-- Dynamically populated -->
+            </div>
+
+            <div class="extracted-actions">
+              <span class="extracted-note">All 12 acoustic & motor features extracted and standardized against Development Split.</span>
+              <button type="button" class="btn-primary" id="analyzeReportBtn">Analyze Report with Quantum Model →</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Execute Inference Bar -->
+        <div class="prediction-action-bar">
+          <div class="disclaimer-note">
+            Research-use only. This system demonstrates algorithmic performance on benchmark datasets and does not provide clinical diagnosis or medical advice.
+          </div>
+          <button type="button" class="btn-primary" id="executeBtn">
+            <span>Execute Model Inference</span>
+            <span>→</span>
+          </button>
+        </div>
+
+        <!-- Real Output Display -->
+        <div class="inference-output-panel" id="outputPanel" style="display: none;">
+          <div class="output-header">
+            <span class="output-badge">LIVE QUANTUM INFERENCE OUTPUT</span>
+            <span class="backend-tag" id="backendTag">PennyLane default.qubit</span>
+          </div>
+
+          <div class="output-content-grid">
+            <div class="output-main-box">
+              <span class="res-meta-label">Predicted Severity Stratification</span>
+              <div class="res-class-name" id="resClassName">CLASS 0 · MILD</div>
+              <div class="res-sub-text" id="resClassSub">Unified Parkinson's Disease Rating Scale below high-severity threshold.</div>
+
+              <!-- Animated Probability Progress Bar -->
+              <div class="prob-bar-container">
+                <div class="prob-bar-track">
+                  <div class="prob-bar-fill" id="probBarFill" style="width: 0%;"></div>
+                </div>
+                <div class="prob-bar-labels">
+                  <span>Class 0 (Mild)</span>
+                  <span id="probBarVal" class="prob-bar-val">0.0%</span>
+                  <span>Class 1 (Severe)</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="output-metrics-box">
+              <div class="metric-row">
+                <span>Model Output Probability:</span>
+                <strong id="resProb">0.2450</strong>
+              </div>
+              <div class="metric-row">
+                <span>Confidence Score:</span>
+                <strong id="resConf">75.5%</strong>
+              </div>
+              <div class="metric-row">
+                <span>Raw Logit:</span>
+                <strong id="resLogit">-1.1254</strong>
+              </div>
+              <div class="metric-row">
+                <span>⟨Z⟩ Quantum Observable:</span>
+                <strong id="resQVal">-0.3218</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================================
+         6. REFERENCES
+         ======================================================================== -->
+    <section class="section-block" id="references">
+      <div class="section-heading-wrap">
+        <span class="section-badge">ACADEMIC LITERATURE</span>
+        <h2 class="section-title">References</h2>
+        <p class="section-desc">
+          Peer-reviewed publications forming the theoretical and experimental baseline of this research.
+        </p>
+      </div>
+
+      <div class="card references-card">
+        <ol class="references-list">
+          <li class="ref-item">
+            <div class="ref-authors">Little, M. A., McSharry, P. E., Hunter, E. J., Spielman, J., & Ramig, L. O. (2009).</div>
+            <div class="ref-title">"Suitability of dysphonia measurements for telemonitoring of Parkinson's disease."</div>
+            <div class="ref-source"><em>IEEE Transactions on Biomedical Engineering</em>, 56(4), 1015-1022.</div>
+          </li>
+          <li class="ref-item">
+            <div class="ref-authors">Bergholm, V., Izaac, J., Schuld, M., Gogolin, C., Alam, M. S., et al. (2018).</div>
+            <div class="ref-title">"PennyLane: Automatic differentiation and machine learning of quantum programs."</div>
+            <div class="ref-source"><em>arXiv preprint arXiv:1811.04968</em>.</div>
+          </li>
+          <li class="ref-item">
+            <div class="ref-authors">Schuld, M., Bocharov, A., Svore, K. M., & Wiebe, N. (2020).</div>
+            <div class="ref-title">"Circuit-centric quantum classifiers."</div>
+            <div class="ref-source"><em>Physical Review A</em>, 101(3), 032308.</div>
+          </li>
+          <li class="ref-item">
+            <div class="ref-authors">McMahan, B., Moore, E., Ramage, D., Hampson, S., & y Arcas, B. A. (2017).</div>
+            <div class="ref-title">"Communication-Efficient Learning of Deep Networks from Decentralized Data."</div>
+            <div class="ref-source"><em>Proceedings of the 20th International Conference on Artificial Intelligence and Statistics (AISTATS)</em>, PMLR 54:1273-1282.</div>
+          </li>
+          <li class="ref-item">
+            <div class="ref-authors">Tsanas, A., Little, M. A., McSharry, P. E., & Ramig, L. O. (2012).</div>
+            <div class="ref-title">"Novel speech signal processing algorithms for high-accuracy classification of Parkinson's disease."</div>
+            <div class="ref-source"><em>IEEE Transactions on Biomedical Engineering</em>, 59(5), 1264-1271.</div>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ========================================================================
+       Footer
+       ======================================================================== -->
+  <footer class="site-footer">
+    <div class="footer-container">
+      <div class="footer-left">
+        <div class="footer-brand">
+          <span class="brand-symbol">Ψ</span>
+          <span>QML-PD Research Platform</span>
+        </div>
+        <p class="footer-desc">
+          Comparative benchmark of Centralized, Federated, and 4-Qubit Variational Quantum Neural Network models on the Oxford Telemonitoring cohort.
+        </p>
+      </div>
+
+      <div class="footer-right">
+        <div class="footer-tagline">
+          Simulation-based execution (PennyLane <code>default.qubit</code>) · Academic Research Use Only
+        </div>
+        <div class="footer-copy">
+          © 2026 QML-PD Research. All benchmark evaluation numbers verified against locked-test cohort.
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

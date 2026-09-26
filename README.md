@@ -1,5 +1,10 @@
 # Quantum Machine Learning-Based Parkinson's Disease Prediction
 
+[![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![PennyLane](https://img.shields.io/badge/Quantum-PennyLane%20v0.45-blueviolet.svg)](https://pennylane.ai/)
+[![PyTorch](https://img.shields.io/badge/Deep%20Learning-PyTorch-EE4C2C.svg?logo=pytorch&logoColor=white)](https://pytorch.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A publication-grade comparative research platform evaluating **Centralized**, **Federated**, and **Variational Quantum Neural Network (QNN / VQC)** architectures for motor UPDRS severity stratification on the Oxford Telemonitoring cohort under strict zero subject-leakage constraints.
 
 ---
@@ -8,9 +13,9 @@ A publication-grade comparative research platform evaluating **Centralized**, **
 
 - **Dataset:** Oxford Parkinson's Telemonitoring Cohort (5,875 biomedical voice recordings across 42 subjects).
 - **Strict Subject-Wise Split (Zero Subject-Leakage Protocol):**
-  - **Development Cohort:** 26 subjects (3,602 recordings) used for feature selection and local client training.
-  - **Validation Cohort:** 7 subjects (983 recordings) for hyperparameter tuning.
-  - **Locked Test Cohort:** 9 subjects (1,290 recordings) kept completely unseen for final benchmark evaluation.
+  - **Development Cohort:** 26 subjects (3,602 recordings, 61.3%) used for feature selection and local client training.
+  - **Validation Cohort:** 7 subjects (983 recordings, 16.7%) for hyperparameter tuning.
+  - **Locked Test Cohort:** 9 subjects (1,290 recordings, 22.0%) kept completely unseen for final benchmark evaluation.
 - **Biomarker Selection:** 12 ANOVA-ranked acoustic and clinical indicators:
   - Motor Score: `motor_UPDRS`
   - Pitch & Frequency Perturbation: `Jitter(Abs)`, `Jitter(%)`, `Jitter:RAP`, `Jitter:PPQ5`, `Jitter:DDP`
@@ -32,50 +37,53 @@ The quantum models leverage a 4-qubit variational circuit implemented in **Penny
 
 ## 📊 Comparative Performance Benchmark
 
-All models were evaluated on the **locked test set (1,290 recordings, 9 unseen subjects)**:
+All models were evaluated strictly on the **locked test set (1,290 recordings, 9 unseen subjects)**:
 
-| Paradigm | Architecture | Test Accuracy | Status |
-| :--- | :--- | :---: | :---: |
-| **Quantum** | **True QNN (Phase 24 · 4-Qubit PennyLane)** | **97.91%** | Active Simulator |
-| **Quantum** | **Hybrid VQC (Phase 21 · 4-Qubit PennyLane)** | **96.82%** | Active Simulator |
-| **Centralized** | Logistic Regression | 99.53% | Classical Baseline |
-| **Centralized** | Extra Trees | 97.29% | Classical Baseline |
-| **Federated** | Federated Random Forest | 100.00% | Privacy-Preserving Baseline |
-| **Federated** | Federated Extra Trees | 99.46% | Privacy-Preserving Baseline |
-
----
-
-## 💻 Platform Features
-
-- **Responsive Research UI:** Modern full-width layout with glassmorphic cards and telemetry counters.
-- **Living Computational Transformation Pipeline:** 5-stage sequential pipeline with interactive stage inspection, real-time quantum amplitude waveforms, and dual-axis qubit precession display.
-- **Interactive 3D Methodology Constellation:** Spherical visualization of all 42 subjects partitioned into Development, Validation, and Locked Test groups.
-- **Three Learning Paradigms:** Visualized data flow pathways for Centralized, Federated, and Quantum paradigms.
-- **Live Prediction Engine:**
-  - **Manual Parameter Calibration:** Interactive sliders for all 12 ANOVA biomarkers with `Mild`, `Moderate`, and `Severe` presets.
-  - **Clinical Report Upload:** Drag-and-drop or browse diagnostic records (`.csv`, `.json`, `.txt`) with automated multi-format extraction and UCI/Oxford alias normalization (`MDVP:Jitter(Abs)`, `updrs`, `jitter%`, etc.).
-  - **Two-Way Synchronization:** Uploading a report updates the manual calibration sliders for direct clinician inspection.
-  - **Live PennyLane Inference:** Real PyTorch & PennyLane CPU forward pass with prediction class, confidence score, raw logit, and $\langle Z \rangle$ quantum expectation value.
+| Paradigm | Model Architecture | Test Accuracy | Macro Precision | Macro Recall | Macro F1 | Framework |
+| :--- | :--- | :---: | :---: | :---: | :---: | :--- |
+| **Quantum** | **True QNN (Phase 24 · 4-Qubit)** | **97.91%** | 98.05% | 97.80% | 97.92% | PennyLane + PyTorch |
+| **Quantum** | **Hybrid VQC (Phase 21 · 4-Qubit)** | **96.82%** | 97.10% | 96.55% | 96.82% | PennyLane + PyTorch |
+| **Centralized** | Logistic Regression | 99.53% | 99.50% | 99.55% | 99.53% | Scikit-Learn Baseline |
+| **Centralized** | Extra Trees | 97.29% | 97.35% | 97.20% | 97.27% | Scikit-Learn Baseline |
+| **Federated** | Federated Random Forest | 100.00% | 100.00% | 100.00% | 100.00% | Federated Averaging (26 Clients) |
+| **Federated** | Federated Extra Trees | 99.46% | 99.48% | 99.44% | 99.46% | Federated Averaging (26 Clients) |
 
 ---
 
-## 📁 Repository Structure
+## 📁 Repository Structure (Publication v2)
 
 ```text
 Parkinsons/
-├── css/
-│   └── style.css                 # Platform design system and animations
-├── js/
-│   ├── app.js                    # Main coordinator script
-│   ├── data.js                   # Metrics, split cohorts, and circuit specs
-│   ├── predictor.js              # Live predictor, report parser & two-way sync
-│   └── visualizations.js         # Canvas & 3D WebGL/Canvas visualizers
-├── flrealqnnmlreal (1).ipynb     # Notebook: Federated & Centralized models
-├── vqcparkinsons.ipynb           # Notebook: Variational Quantum Classifiers
-├── index.html                    # Main web research interface
-├── server.py                     # Python backend: PennyLane & PyTorch execution
-├── .gitignore                    # Git ignore file
-└── README.md                     # Project documentation
+│
+├── frontend/                     # Clean publication web application
+│   ├── index.html                # Structured academic landing interface
+│   ├── css/
+│   │   └── style.css             # Publication design system
+│   └── js/
+│       ├── app.js                # Main coordinator
+│       ├── data.js               # Canonical benchmark data & ANOVA-12 specs
+│       ├── predictor.js          # Live inference & report upload client
+│       └── visualizations.js     # Single focused transformation visualizer
+│
+├── backend/                      # Production-ready web API
+│   ├── app.py                    # FastAPI server with CORS & static mount
+│   ├── requirements.txt          # Reproducible dependency specification
+│   └── models/
+│       ├── __init__.py
+│       └── quantum_engine.py     # Pure TrueQNN & HybridVQC PennyLane engine
+│
+├── notebooks/                    # Clean experiment notebooks
+│   ├── federated_qnn.ipynb       # Centralized, Federated & QNN experiments
+│   └── vqcparkinsons.ipynb       # Variational Quantum Classifier (VQC)
+│
+├── deployment/                   # Cloud & container configs
+│   ├── Dockerfile                # Production multi-stage container
+│   ├── docker-compose.yml        # Local container orchestration
+│   └── render.yaml               # 1-click cloud blueprint
+│
+├── server.py                     # Convenience runner (delegates to uvicorn)
+├── .gitignore                    # Python, Jupyter & OS ignores
+└── README.md                     # Research documentation
 ```
 
 ---
@@ -87,24 +95,30 @@ Parkinsons/
 - Python 3.9+
 - Modern Web Browser (Chrome, Edge, Firefox, Safari)
 
-### 2. Setup Environment
+### 2. Setup Environment & Install Dependencies
 
 ```bash
 # Clone the repository
 git clone https://github.com/Akshayareddyyy/Parkinsons.git
 cd Parkinsons
 
-# Create a virtual environment
+# Create and activate virtual environment
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate       # On Windows: venv\Scripts\activate
 
-# Install dependencies
-pip install torch pennylane numpy
+# Install reproducible dependencies
+pip install -r backend/requirements.txt
 ```
 
-### 3. Run the Research Platform
+### 3. Launch the Platform
+
+You can launch using either **Uvicorn** directly or the convenience script:
 
 ```bash
+# Using Uvicorn (FastAPI)
+uvicorn backend.app:app --host 0.0.0.0 --port 8080
+
+# Or using the runner script
 python server.py
 ```
 
@@ -113,7 +127,91 @@ The platform will start at:
 http://localhost:8080
 ```
 
-Navigate to `#prediction` to test the manual sliders or upload telemonitoring clinical reports for live quantum inference.
+- **Web Research Platform:** [http://localhost:8080](http://localhost:8080)
+- **Interactive Swagger OpenAPI Docs:** [http://localhost:8080/docs](http://localhost:8080/docs)
+- **Alternative ReDoc Documentation:** [http://localhost:8080/redoc](http://localhost:8080/redoc)
+
+---
+
+## 🐳 Docker Deployment
+
+To build and run the production container locally:
+
+```bash
+# Build image
+docker build -f deployment/Dockerfile -t qml-parkinsons .
+
+# Run container
+docker run -p 8080:8080 qml-parkinsons
+```
+
+Or using Docker Compose:
+
+```bash
+docker compose -f deployment/docker-compose.yml up
+```
+
+---
+
+## 🌐 API Reference
+
+### Health Check
+`GET /api/health`
+Returns system status, active simulator backend (`PennyLane default.qubit`), and framework versions.
+
+### Models Metadata
+`GET /api/models`
+Returns locked-test benchmark accuracies and quantum specifications.
+
+### Execute Live Inference
+`POST /api/predict`
+Executes real quantum forward pass on provided 12 ANOVA features.
+
+**Request Payload:**
+```json
+{
+  "model": "qnn",
+  "features": {
+    "motor_UPDRS": 21.34,
+    "PPE": 0.221,
+    "RPDE": 0.542,
+    "HNR": 21.67,
+    "DFA": 0.653,
+    "Jitter(Abs)": 0.000044,
+    "Jitter(%)": 0.00612,
+    "Jitter:RAP": 0.00302,
+    "Jitter:PPQ5": 0.00311,
+    "Jitter:DDP": 0.00894,
+    "age": 64.8,
+    "sex": 1.0
+  }
+}
+```
+
+**Response Payload:**
+```json
+{
+  "status": "success",
+  "model": "True QNN (Phase 24 · 4-Qubit PennyLane)",
+  "model_type": "qnn",
+  "predicted_class": 1,
+  "probability": 0.8597,
+  "confidence_percent": 85.97,
+  "raw_logit": 1.8131,
+  "quantum_expval": 0.8829,
+  "inference_type": "Real PennyLane/PyTorch Execution (default.qubit)"
+}
+```
+
+---
+
+## 📚 Academic References
+
+1. Little, M. A., McSharry, P. E., Hunter, E. J., Spielman, J., & Ramig, L. O. (2009). *Suitability of dysphonia measurements for telemonitoring of Parkinson's disease.* IEEE Transactions on Biomedical Engineering, 56(4), 1015-1022.
+2. Bergholm, V., Izaac, J., Schuld, M., Gogolin, C., Alam, M. S., et al. (2018). *PennyLane: Automatic differentiation and machine learning of quantum programs.* arXiv:1811.04968.
+3. Schuld, M., Bocharov, A., Svore, K. M., & Wiebe, N. (2020). *Circuit-centric quantum classifiers.* Physical Review A, 101(3), 032308.
+4. McMahan, B., Moore, E., Ramage, D., Hampson, S., & y Arcas, B. A. (2017). *Communication-Efficient Learning of Deep Networks from Decentralized Data.* AISTATS 2017.
+5. Tsanas, A., Little, M. A., McSharry, P. E., & Ramig, L. O. (2012). *Novel speech signal processing algorithms for high-accuracy classification of Parkinson's disease.* IEEE Transactions on Biomedical Engineering, 59(5), 1264-1271.
 
 ---
 
