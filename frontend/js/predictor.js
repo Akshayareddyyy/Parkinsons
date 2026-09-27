@@ -293,6 +293,15 @@ export class RealPredictor {
       this.manualSection.style.display = 'none';
     }
 
+    // Cleanly hide previous prediction output on mode switch so each view is clean
+    if (this.outputPanel) {
+      this.outputPanel.style.display = 'none';
+    }
+    if (this.voiceResultsCard) {
+      this.voiceResultsCard.style.display = 'none';
+    }
+    this.hideVoiceError();
+
     // Activate selected mode exclusively
     if (mode === 'voice') {
       if (this.modeVoiceBtn) this.modeVoiceBtn.classList.add('active');
@@ -312,6 +321,7 @@ export class RealPredictor {
         this.manualSection.classList.add('active');
         this.manualSection.style.display = 'block';
       }
+      this.syncSlidersWithValues();
     }
   }
 
@@ -321,8 +331,14 @@ export class RealPredictor {
   attachVoiceEvents() {
     // Voice sub-tabs (Record vs Upload)
     if (this.tabVoiceRecord && this.tabVoiceUpload) {
-      this.tabVoiceRecord.addEventListener('click', () => this.switchVoiceTab('record'));
-      this.tabVoiceUpload.addEventListener('click', () => this.switchVoiceTab('upload'));
+      this.tabVoiceRecord.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.switchVoiceTab('record');
+      });
+      this.tabVoiceUpload.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.switchVoiceTab('upload');
+      });
     }
 
     // Live Recording toggle
@@ -337,7 +353,16 @@ export class RealPredictor {
 
     // Voice file upload drag & drop
     if (this.voiceDropzone && this.voiceFileInput) {
-      this.voiceDropzone.addEventListener('click', () => this.voiceFileInput.click());
+      // Prevent synthetic click from bubbling back up to dropzone
+      this.voiceFileInput.addEventListener('click', (e) => {
+        e.stopPropagation();
+      });
+
+      this.voiceDropzone.addEventListener('click', (e) => {
+        if (e.target !== this.voiceFileInput) {
+          this.voiceFileInput.click();
+        }
+      });
 
       this.voiceFileInput.addEventListener('change', (e) => {
         const file = e.target.files && e.target.files[0];
@@ -378,13 +403,25 @@ export class RealPredictor {
     if (tab === 'record') {
       if (this.tabVoiceRecord) this.tabVoiceRecord.classList.add('active');
       if (this.tabVoiceUpload) this.tabVoiceUpload.classList.remove('active');
-      if (this.paneVoiceRecord) this.paneVoiceRecord.style.display = 'block';
-      if (this.paneVoiceUpload) this.paneVoiceUpload.style.display = 'none';
+      if (this.paneVoiceRecord) {
+        this.paneVoiceRecord.classList.add('active');
+        this.paneVoiceRecord.style.display = 'block';
+      }
+      if (this.paneVoiceUpload) {
+        this.paneVoiceUpload.classList.remove('active');
+        this.paneVoiceUpload.style.display = 'none';
+      }
     } else {
       if (this.tabVoiceUpload) this.tabVoiceUpload.classList.add('active');
       if (this.tabVoiceRecord) this.tabVoiceRecord.classList.remove('active');
-      if (this.paneVoiceRecord) this.paneVoiceRecord.style.display = 'none';
-      if (this.paneVoiceUpload) this.paneVoiceUpload.style.display = 'block';
+      if (this.paneVoiceUpload) {
+        this.paneVoiceUpload.classList.add('active');
+        this.paneVoiceUpload.style.display = 'block';
+      }
+      if (this.paneVoiceRecord) {
+        this.paneVoiceRecord.classList.remove('active');
+        this.paneVoiceRecord.style.display = 'none';
+      }
     }
   }
 
@@ -458,10 +495,18 @@ export class RealPredictor {
         }
       };
 
-      this.mediaRecorder.onstop = () => {
+      this.mediaRecorder.onstop = async () => {
         const mimeType = (this.mediaRecorder && this.mediaRecorder.mimeType) || 'audio/webm';
-        this.recordedAudioBlob = new Blob(this.audioChunks, { type: mimeType });
+        const rawBlob = new Blob(this.audioChunks, { type: mimeType });
         this.uploadedAudioFile = null;
+
+        try {
+          // Convert browser WebM / Opus to true standard 16-bit PCM WAV for Praat
+          this.recordedAudioBlob = await this.convertBlobToWav(rawBlob);
+        } catch (convErr) {
+          console.warn("PCM WAV conversion fallback to raw recording:", convErr);
+          this.recordedAudioBlob = rawBlob;
+        }
 
         const audioUrl = URL.createObjectURL(this.recordedAudioBlob);
         this.showAudioPreview(audioUrl, 'patient_recording.wav', this.recordingSeconds, true);
@@ -507,6 +552,78 @@ export class RealPredictor {
     if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
       this.mediaRecorder.stop();
     }
+  }
+
+  async convertBlobToWav(audioBlob) {
+    const arrayBuffer = await audioBlob.arrayBuffer();
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return audioBlob;
+    const audioCtx = new AudioContextClass();
+    const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+    const wavBlob = this.audioBufferToWav(audioBuffer);
+    if (audioCtx.close) audioCtx.close();
+    return wavBlob;
+  }
+
+  audioBufferToWav(buffer) {
+    const numChannels = 1;
+    const sampleRate = buffer.sampleRate;
+    const format = 1; // PCM
+    const bitDepth = 16;
+
+    let channelData;
+    if (buffer.numberOfChannels === 1) {
+      channelData = buffer.getChannelData(0);
+    } else {
+      const left = buffer.getChannelData(0);
+      const right = buffer.getChannelData(1);
+      channelData = new Float32Array(left.length);
+      for (let i = 0; i < left.length; i++) {
+        channelData[i] = (left[i] + right[i]) / 2;
+      }
+    }
+
+    const bytesPerSample = bitDepth / 8;
+    const blockAlign = numChannels * bytesPerSample;
+    const dataSize = channelData.length * bytesPerSample;
+    const headerSize = 44;
+    const totalSize = headerSize + dataSize;
+    const arrayBuffer = new ArrayBuffer(totalSize);
+    const view = new DataView(arrayBuffer);
+
+    const writeString = (offset, str) => {
+      for (let i = 0; i < str.length; i++) {
+        view.setUint8(offset + i, str.charCodeAt(i));
+      }
+    };
+
+    /* RIFF descriptor */
+    writeString(0, 'RIFF');
+    view.setUint32(4, 36 + dataSize, true);
+    writeString(8, 'WAVE');
+
+    /* "fmt " sub-chunk */
+    writeString(12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, format, true);
+    view.setUint16(22, numChannels, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * blockAlign, true);
+    view.setUint16(32, blockAlign, true);
+    view.setUint16(34, bitDepth, true);
+
+    /* "data" sub-chunk */
+    writeString(36, 'data');
+    view.setUint32(40, dataSize, true);
+
+    let offset = 44;
+    for (let i = 0; i < channelData.length; i++) {
+      let s = Math.max(-1, Math.min(1, channelData[i]));
+      view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+      offset += 2;
+    }
+
+    return new Blob([view], { type: 'audio/wav' });
   }
 
   updateRecordingUI(isRecording) {
@@ -889,8 +1006,15 @@ export class RealPredictor {
   attachReportUploadEvents() {
     if (!this.reportDropzone || !this.reportFileInput) return;
 
-    this.reportDropzone.addEventListener('click', () => {
-      this.reportFileInput.click();
+    // Prevent click on file input from bubbling back up to dropzone
+    this.reportFileInput.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+
+    this.reportDropzone.addEventListener('click', (e) => {
+      if (e.target !== this.reportFileInput) {
+        this.reportFileInput.click();
+      }
     });
 
     this.reportFileInput.addEventListener('change', (e) => {

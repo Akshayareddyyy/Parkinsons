@@ -1061,14 +1061,26 @@ body {
   display: block !important;
 }
 
+.voice-tab-pane {
+  display: none;
+}
+
+.voice-tab-pane.active {
+  display: block !important;
+}
+
+/* Accessible hidden file input: allows programmatic .click() without browser security blocking */
 .file-input-hidden {
-  display: none !important;
-  width: 0 !important;
-  height: 0 !important;
-  opacity: 0 !important;
-  visibility: hidden !important;
   position: absolute !important;
-  pointer-events: none !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+  opacity: 0 !important;
 }
 
 /* Mode Switcher Bar */
