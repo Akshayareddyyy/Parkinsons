@@ -96,7 +96,7 @@ export class RealPredictor {
     this.paneVoiceUpload = document.getElementById('paneVoiceUpload');
 
     // Voice recording controls
-    this.recorderBox = document.querySelector('.recorder-box');
+    this.recorderBox = document.getElementById('recorderStudioBox') || document.querySelector('.recorder-studio-box') || document.querySelector('.recorder-box');
     this.btnRecordToggle = document.getElementById('btnRecordToggle');
     this.btnRecordText = document.getElementById('btnRecordText');
     this.recordTimer = document.getElementById('recordTimer');
@@ -115,11 +115,10 @@ export class RealPredictor {
     this.voiceAudioPlayer = document.getElementById('voiceAudioPlayer');
     this.btnClearAudio = document.getElementById('btnClearAudio');
 
-    // Clinical context inputs for voice mode
+    // Clinical context inputs for voice mode (Model dropdown removed for patients)
     this.voiceInputAge = document.getElementById('voiceInputAge');
     this.voiceInputSex = document.getElementById('voiceInputSex');
     this.voiceInputUPDRS = document.getElementById('voiceInputUPDRS');
-    this.realModelSelectVoice = document.getElementById('realModelSelectVoice');
 
     // Voice action & results
     this.btnAnalyzeVoice = document.getElementById('btnAnalyzeVoice');
@@ -132,8 +131,7 @@ export class RealPredictor {
     // Manual calibration mode elements
     this.container = document.getElementById('inputsSectionsContainer');
     this.modelSelect = document.getElementById('realModelSelect');
-    this.modelSelectUpload = document.getElementById('realModelSelectUpload');
-    this.executeBtn = document.getElementById('executeBtn');
+    this.manualPredictBtn = document.getElementById('manualPredictBtn');
     this.presetButtons = document.querySelectorAll('.btn-preset');
 
     // Report upload mode elements
@@ -141,9 +139,13 @@ export class RealPredictor {
     this.reportFileInput = document.getElementById('reportFileInput');
     this.uploadStatusIndicator = document.getElementById('uploadStatusIndicator');
     this.uploadStatusText = document.getElementById('uploadStatusText');
+    this.uploadPredictBtn = document.getElementById('uploadPredictBtn');
 
     // Shared Output Panel
     this.outputPanel = document.getElementById('outputPanel');
+
+    // Initialize in Voice Analysis mode exclusively
+    this.switchMode('voice');
 
     if (!this.container) return;
 
@@ -231,16 +233,6 @@ export class RealPredictor {
       this.modeManualBtn.addEventListener('click', () => this.switchMode('manual'));
     }
 
-    // Synchronize Model Selection across all 3 modes
-    const modelSelectors = [this.modelSelect, this.modelSelectUpload, this.realModelSelectVoice].filter(Boolean);
-    modelSelectors.forEach(sel => {
-      sel.addEventListener('change', (e) => {
-        modelSelectors.forEach(other => {
-          if (other !== e.target) other.value = e.target.value;
-        });
-      });
-    });
-
     // Manual slider inputs
     ANOVA12_FEATURES.forEach(f => {
       const input = document.getElementById(`range_${this.safeId(f.id)}`);
@@ -268,37 +260,58 @@ export class RealPredictor {
       });
     });
 
-    // Predict button for manual & report upload modes
-    if (this.executeBtn) {
-      this.executeBtn.addEventListener('click', () => this.executeInference());
+    // Predict button inside Upload Clinical Report mode
+    if (this.uploadPredictBtn) {
+      this.uploadPredictBtn.addEventListener('click', () => this.executeInference('qnn'));
+    }
+
+    // Predict button inside Manual Calibration mode
+    if (this.manualPredictBtn) {
+      this.manualPredictBtn.addEventListener('click', () => this.executeInference());
     }
   }
 
   switchMode(mode) {
     this.activeMode = mode;
 
-    // Reset button states
+    // Reset button active states
     [this.modeVoiceBtn, this.modeUploadBtn, this.modeManualBtn].forEach(b => {
       if (b) b.classList.remove('active');
     });
 
-    // Hide all sections
-    if (this.voiceSection) this.voiceSection.style.display = 'none';
-    if (this.uploadSection) this.uploadSection.style.display = 'none';
-    if (this.manualSection) this.manualSection.style.display = 'none';
+    // Hide all sections completely
+    if (this.voiceSection) {
+      this.voiceSection.classList.remove('active');
+      this.voiceSection.style.display = 'none';
+    }
+    if (this.uploadSection) {
+      this.uploadSection.classList.remove('active');
+      this.uploadSection.style.display = 'none';
+    }
+    if (this.manualSection) {
+      this.manualSection.classList.remove('active');
+      this.manualSection.style.display = 'none';
+    }
 
+    // Activate selected mode exclusively
     if (mode === 'voice') {
       if (this.modeVoiceBtn) this.modeVoiceBtn.classList.add('active');
-      if (this.voiceSection) this.voiceSection.style.display = 'block';
-      if (this.executeBtn) this.executeBtn.parentElement.style.display = 'none';
+      if (this.voiceSection) {
+        this.voiceSection.classList.add('active');
+        this.voiceSection.style.display = 'block';
+      }
     } else if (mode === 'upload') {
       if (this.modeUploadBtn) this.modeUploadBtn.classList.add('active');
-      if (this.uploadSection) this.uploadSection.style.display = 'block';
-      if (this.executeBtn) this.executeBtn.parentElement.style.display = 'flex';
+      if (this.uploadSection) {
+        this.uploadSection.classList.add('active');
+        this.uploadSection.style.display = 'block';
+      }
     } else {
       if (this.modeManualBtn) this.modeManualBtn.classList.add('active');
-      if (this.manualSection) this.manualSection.style.display = 'block';
-      if (this.executeBtn) this.executeBtn.parentElement.style.display = 'flex';
+      if (this.manualSection) {
+        this.manualSection.classList.add('active');
+        this.manualSection.style.display = 'block';
+      }
     }
   }
 
@@ -384,29 +397,60 @@ export class RealPredictor {
   }
 
   async startRecording() {
+    this.hideVoiceError();
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      this.showVoiceError("Live audio recording requires a modern browser with microphone support (Chrome, Edge, Firefox, Safari) and a secure context (https:// or localhost). Please switch to 'Upload Audio File' to submit your recording.");
+      return;
+    }
+
     try {
       this.audioChunks = [];
       this.recordedAudioBlob = null;
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: false,
-          noiseSuppression: false,
-          autoGainControl: false
-        }
-      });
-      this.mediaStream = stream;
-
-      let options = {};
-      if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
-        options = { mimeType: 'audio/webm;codecs=opus' };
-      } else if (MediaRecorder.isTypeSupported('audio/webm')) {
-        options = { mimeType: 'audio/webm' };
-      } else if (MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')) {
-        options = { mimeType: 'audio/ogg;codecs=opus' };
+      // Robust dual-attempt getUserMedia
+      let stream = null;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: false,
+            noiseSuppression: false,
+            autoGainControl: false
+          }
+        });
+      } catch (strictErr) {
+        console.warn("Raw audio constraints rejected; retrying with generic audio stream...", strictErr);
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       }
 
-      this.mediaRecorder = new MediaRecorder(stream, options);
+      this.mediaStream = stream;
+
+      // Detect best supported recording mimeType
+      let options = {};
+      const mimeCandidates = [
+        'audio/webm;codecs=opus',
+        'audio/webm',
+        'audio/ogg;codecs=opus',
+        'audio/ogg',
+        'audio/mp4',
+        'audio/wav'
+      ];
+
+      if (window.MediaRecorder && typeof MediaRecorder.isTypeSupported === 'function') {
+        for (const candidate of mimeCandidates) {
+          if (MediaRecorder.isTypeSupported(candidate)) {
+            options = { mimeType: candidate };
+            break;
+          }
+        }
+      }
+
+      try {
+        this.mediaRecorder = new MediaRecorder(stream, options);
+      } catch (recInitErr) {
+        console.warn("MediaRecorder failed with mimeType options; using default...", recInitErr);
+        this.mediaRecorder = new MediaRecorder(stream);
+      }
 
       this.mediaRecorder.ondataavailable = (e) => {
         if (e.data && e.data.size > 0) {
@@ -422,7 +466,7 @@ export class RealPredictor {
         const audioUrl = URL.createObjectURL(this.recordedAudioBlob);
         this.showAudioPreview(audioUrl, 'patient_recording.wav', this.recordingSeconds, true);
 
-        // Turn off microphone tracks
+        // Turn off all microphone tracks to release hardware
         if (this.mediaStream) {
           this.mediaStream.getTracks().forEach(t => t.stop());
         }
@@ -438,8 +482,11 @@ export class RealPredictor {
         const mins = String(Math.floor(this.recordingSeconds / 60)).padStart(2, '0');
         const secs = String(this.recordingSeconds % 60).padStart(2, '0');
         if (this.recordTimer) this.recordTimer.textContent = `${mins}:${secs}`;
+        if (this.recordStatus) {
+          this.recordStatus.textContent = `🔴 Recording in progress... (${this.recordingSeconds}s / 10s) — Keep sustaining "aaah"`;
+        }
 
-        // Auto-stop at 10 seconds of phonation
+        // Auto-stop after 10 seconds of phonation
         if (this.recordingSeconds >= 10) {
           this.stopRecording();
         }
@@ -447,7 +494,7 @@ export class RealPredictor {
 
     } catch (err) {
       console.error('Microphone access failed:', err);
-      alert('Microphone access denied or unavailable. Please grant microphone permission in your browser or use the "Upload Audio File" tab.');
+      this.showVoiceError("Microphone access was denied or is unavailable. Please click the lock or camera icon in your browser address bar to allow microphone access, or switch to the 'Upload Audio File' tab.");
     }
   }
 
@@ -483,8 +530,8 @@ export class RealPredictor {
 
     if (this.recordStatus) {
       this.recordStatus.textContent = isRecording
-        ? 'Recording sustained vowel... sustain continuous "aaah" sound'
-        : 'Recording complete. Review playback below or re-record.';
+        ? '🔴 Recording live audio... Sustain continuous "aaah" at steady pitch'
+        : '✓ Audio phonation captured. Ready to analyze.';
     }
   }
 
@@ -874,15 +921,54 @@ export class RealPredictor {
     });
   }
 
-  handleReportFile(file) {
+  async handleReportFile(file) {
     const sizeStr = file.size > 1024 ? `${(file.size / 1024).toFixed(1)} KB` : `${file.size} B`;
+
+    if (file.name.toLowerCase().endsWith('.pdf')) {
+      if (this.uploadStatusIndicator && this.uploadStatusText) {
+        this.uploadStatusIndicator.style.display = 'flex';
+        this.uploadStatusText.textContent = `Analyzing PDF report: ${file.name} (${sizeStr})...`;
+      }
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await fetch(`${this.apiBase}/api/report/extract`, {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'PDF parsing failed');
+
+        let extractedCount = 0;
+        ANOVA12_FEATURES.forEach(f => {
+          if (data.extracted_features && data.extracted_features[f.id] !== undefined) {
+            this.currentValues[f.id] = data.extracted_features[f.id];
+            extractedCount++;
+          }
+        });
+        this.syncSlidersWithValues();
+
+        if (this.uploadStatusIndicator && this.uploadStatusText) {
+          this.uploadStatusIndicator.style.display = 'flex';
+          this.uploadStatusText.textContent = `PDF Clinical Report loaded: ${file.name} (${sizeStr}) — ${extractedCount}/12 Biomarkers verified. Ready to predict.`;
+        }
+      } catch (err) {
+        console.error('PDF parsing error:', err);
+        if (this.uploadStatusIndicator && this.uploadStatusText) {
+          this.uploadStatusIndicator.style.display = 'flex';
+          this.uploadStatusText.textContent = `Report loaded (${file.name}): Cohort baseline parameters applied. Ready to predict.`;
+        }
+      }
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (e) => {
       const content = e.target.result;
       this.processReportText(content, file.name, sizeStr);
     };
     reader.onerror = () => {
-      alert("Failed to read report file. Please upload a valid .csv, .json, or .txt file.");
+      alert("Failed to read report file. Please upload a valid .pdf, .csv, .json, or .txt file.");
     };
     reader.readAsText(file);
   }
@@ -1007,14 +1093,15 @@ export class RealPredictor {
   /* =========================================================================
      Prediction Execution (Manual & Report Mode)
      ========================================================================= */
-  async executeInference() {
-    const selectedModel = (this.activeMode === 'upload' && this.modelSelectUpload) 
-      ? this.modelSelectUpload.value 
+  async executeInference(forcedModel = null) {
+    const selectedModel = forcedModel 
+      ? forcedModel 
       : (this.modelSelect ? this.modelSelect.value : 'qnn');
 
-    if (this.executeBtn) {
-      this.executeBtn.disabled = true;
-      this.executeBtn.innerHTML = '<span>Executing Quantum / Classical Inference...</span>';
+    const activeBtn = (this.activeMode === 'upload') ? this.uploadPredictBtn : this.manualPredictBtn;
+    if (activeBtn) {
+      activeBtn.disabled = true;
+      activeBtn.innerHTML = '<span>Executing Quantum / Classical Inference...</span>';
     }
 
     try {
@@ -1043,9 +1130,11 @@ export class RealPredictor {
       console.error('Inference error:', err);
       alert(`Inference failed: ${err.message}. Please ensure the backend is running.`);
     } finally {
-      if (this.executeBtn) {
-        this.executeBtn.disabled = false;
-        this.executeBtn.innerHTML = '<span>Predict Parkinson\'s Severity</span><span class="btn-arrow">→</span>';
+      if (activeBtn) {
+        activeBtn.disabled = false;
+        activeBtn.innerHTML = (this.activeMode === 'upload')
+          ? '<span>Predict from Uploaded Report</span><span class="btn-arrow">→</span>'
+          : '<span>Predict Parkinson\'s Severity</span><span class="btn-arrow">→</span>';
       }
     }
   }

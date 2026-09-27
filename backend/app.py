@@ -194,7 +194,7 @@ async def analyze_and_predict_voice(
 
         # Step C: Execute quantum / classical inference pipeline
         prediction = engine.predict(
-            model_type=model,
+            model_type=model or "qnn",
             features_dict=full_features
         )
 
@@ -208,6 +208,83 @@ async def analyze_and_predict_voice(
         raise HTTPException(status_code=422, detail=str(ve))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Audio processing and prediction failed: {str(e)}")
+
+
+@app.post("/api/report/extract")
+async def extract_report_endpoint(file: UploadFile = File(...)):
+    """
+    Programmatic extraction of 12-ANOVA Parkinson's biomarkers from clinical reports.
+    Supports PDF clinical records, CSV data tables, JSON records, and plain text exports.
+    """
+    import json, io, re
+    content = await file.read()
+    filename = (file.filename or "").lower()
+    text = ""
+
+    try:
+        if filename.endswith(".pdf"):
+            import pdfplumber
+            with pdfplumber.open(io.BytesIO(content)) as pdf:
+                pages = [p.extract_text() or "" for p in pdf.pages]
+                text = "\n".join(pages)
+        elif filename.endswith(".json"):
+            try:
+                parsed = json.loads(content.decode("utf-8", errors="ignore"))
+                flat = parsed.get("biomarkers") or parsed.get("features") or parsed.get("data") or parsed
+                if isinstance(flat, dict):
+                    text = "\n".join(f"{k}: {v}" for k, v in flat.items())
+                else:
+                    text = json.dumps(flat)
+            except Exception:
+                text = content.decode("utf-8", errors="ignore")
+        else:
+            text = content.decode("utf-8", errors="ignore")
+
+        ALIAS_MAP = {
+            "motorupdrs": "motor_UPDRS", "updrs": "motor_UPDRS", "motor": "motor_UPDRS",
+            "ppe": "PPE", "rpde": "RPDE", "hnr": "HNR", "dfa": "DFA",
+            "jitterabs": "Jitter(Abs)", "jitter(abs)": "Jitter(Abs)", "mdvpjitterabs": "Jitter(Abs)",
+            "jitter%": "Jitter(%)", "jitter(%)": "Jitter(%)", "jitterpercent": "Jitter(%)", "jitterpct": "Jitter(%)",
+            "jitterrap": "Jitter:RAP", "jitter:rap": "Jitter:RAP", "mdvprap": "Jitter:RAP",
+            "jitterppq5": "Jitter:PPQ5", "jitter:ppq5": "Jitter:PPQ5", "mdvpppq": "Jitter:PPQ5",
+            "jitterddp": "Jitter:DDP", "jitter:ddp": "Jitter:DDP",
+            "age": "age", "sex": "sex", "gender": "sex"
+        }
+
+        extracted = {}
+        # Parse CSV if commas detected
+        lines = [l.strip() for l in text.splitlines() if l.strip()]
+        if len(lines) >= 2 and "," in lines[0]:
+            headers = [h.strip().strip('"\'').lower().replace(" ", "").replace("_", "") for h in lines[0].split(",")]
+            values = [v.strip().strip('"\'') for v in lines[1].split(",")]
+            for h, v in zip(headers, values):
+                if h in ALIAS_MAP:
+                    try:
+                        extracted[ALIAS_MAP[h]] = float(v)
+                    except ValueError:
+                        pass
+
+        # Regex search for key-value pairs
+        for alias, canon in ALIAS_MAP.items():
+            if canon not in extracted:
+                pattern = re.compile(rf'(?:^|\b){re.escape(alias)}\s*[:=,\t]\s*([0-9.]+)', re.IGNORECASE)
+                m = pattern.search(text)
+                if m:
+                    try:
+                        extracted[canon] = float(m.group(1))
+                    except ValueError:
+                        pass
+
+        return {
+            "success": True,
+            "filename": file.filename,
+            "extracted_features": extracted,
+            "count": len(extracted),
+            "text_preview": text[:400] if text else "No text extracted"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to parse report file: {str(e)}")
+
 
 
 
