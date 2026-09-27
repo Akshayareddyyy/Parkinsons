@@ -16,7 +16,13 @@ import numpy as np
 import parselmouth
 from parselmouth.praat import call
 import soundfile as sf
-import librosa
+from scipy.io import wavfile
+
+# Optional audio decoders
+try:
+    import librosa
+except ImportError:
+    librosa = None
 
 
 class VoiceExtractionError(Exception):
@@ -54,18 +60,55 @@ class VoiceFeatureExtractor:
         except Exception:
             pass
 
-        # Attempt 2: Librosa fallback (handles WebM, MP3, M4A, and exotic containers)
+        # Attempt 2: scipy.io.wavfile (standard library scipy fallback for WAV)
         if audio_arr is None:
+            try:
+                bio.seek(0)
+                sample_rate, data = wavfile.read(bio)
+                if data.ndim > 1:
+                    data = np.mean(data, axis=1)
+                if np.issubdtype(data.dtype, np.integer):
+                    max_val = float(np.iinfo(data.dtype).max)
+                    audio_arr = (data / max_val).astype(np.float32)
+                else:
+                    audio_arr = data.astype(np.float32)
+                sr = sample_rate
+            except Exception:
+                pass
+
+        # Attempt 3: Parselmouth Praat native Sound decoding via temp memory buffer
+        if audio_arr is None:
+            try:
+                import tempfile
+                import os
+                with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tf:
+                    tf.write(audio_bytes)
+                    tmp_path = tf.name
+                snd = parselmouth.Sound(tmp_path)
+                try:
+                    os.unlink(tmp_path)
+                except Exception:
+                    pass
+                audio_arr = snd.values[0].astype(np.float32)
+                sr = int(snd.sampling_frequency)
+            except Exception:
+                pass
+
+        # Attempt 4: Librosa fallback (if installed for WebM, MP3, M4A)
+        if audio_arr is None and librosa is not None:
             try:
                 bio.seek(0)
                 data, sample_rate = librosa.load(bio, sr=None, mono=True)
                 audio_arr = data.astype(np.float32)
                 sr = sample_rate
-            except Exception as e:
-                raise VoiceExtractionError(
-                    f"Unsupported or corrupted audio format ({filename}). "
-                    "Please upload or record standard uncompressed WAV, MP3, or M4A audio."
-                ) from e
+            except Exception:
+                pass
+
+        if audio_arr is None:
+            raise VoiceExtractionError(
+                f"Unsupported or corrupted audio format ({filename}). "
+                "Please upload or record standard uncompressed WAV, MP3, or M4A audio."
+            )
 
         duration = len(audio_arr) / sr
         return audio_arr, sr, duration
