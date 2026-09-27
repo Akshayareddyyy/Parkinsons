@@ -1,6 +1,6 @@
 /**
  * QML-PD Research Platform - Live Prediction Engine Client
- * Interacts with FastAPI Backend (/api/voice/predict, /api/predict)
+ * Interacts with FastAPI Backend (/api/voice/predict, /api/voice/analyze, /api/predict, /api/report/extract)
  * Features authentic audio recording, Praat acoustic feature extraction, and Quantum ML inference.
  */
 
@@ -61,6 +61,7 @@ export class RealPredictor {
     // Audio recording & file state
     this.recordedAudioBlob = null;
     this.uploadedAudioFile = null;
+    this.selectedReportFile = null;
     this.mediaRecorder = null;
     this.mediaStream = null;
     this.audioChunks = [];
@@ -70,6 +71,10 @@ export class RealPredictor {
 
     this.initDefaults();
     this.initDOM();
+
+    // Expose instance globally for inline event handlers and console access
+    window.predictor = this;
+    window.switchPredictionMode = (mode) => this.switchMode(mode);
   }
 
   initDefaults() {
@@ -96,7 +101,7 @@ export class RealPredictor {
     this.paneVoiceUpload = document.getElementById('paneVoiceUpload');
 
     // Voice recording controls
-    this.recorderBox = document.getElementById('recorderStudioBox') || document.querySelector('.recorder-studio-box') || document.querySelector('.recorder-box');
+    this.recorderBox = document.getElementById('recorderStudioBox') || document.querySelector('.recorder-studio-box');
     this.btnRecordToggle = document.getElementById('btnRecordToggle');
     this.btnRecordText = document.getElementById('btnRecordText');
     this.recordTimer = document.getElementById('recordTimer');
@@ -106,6 +111,8 @@ export class RealPredictor {
     // Voice file upload
     this.voiceDropzone = document.getElementById('voiceDropzone');
     this.voiceFileInput = document.getElementById('voiceFileInput');
+    this.btnVoiceUploadTrigger = document.getElementById('btnVoiceUploadTrigger');
+    this.voiceBrowseSpan = document.getElementById('voiceBrowseSpan');
 
     // Audio preview player
     this.audioPreviewStrip = document.getElementById('audioPreviewStrip');
@@ -115,7 +122,7 @@ export class RealPredictor {
     this.voiceAudioPlayer = document.getElementById('voiceAudioPlayer');
     this.btnClearAudio = document.getElementById('btnClearAudio');
 
-    // Clinical context inputs for voice mode (Model dropdown removed for patients)
+    // Clinical context inputs for voice mode
     this.voiceInputAge = document.getElementById('voiceInputAge');
     this.voiceInputSex = document.getElementById('voiceInputSex');
     this.voiceInputUPDRS = document.getElementById('voiceInputUPDRS');
@@ -137,236 +144,190 @@ export class RealPredictor {
     // Report upload mode elements
     this.reportDropzone = document.getElementById('reportDropzone');
     this.reportFileInput = document.getElementById('reportFileInput');
+    this.btnReportUploadTrigger = document.getElementById('btnReportUploadTrigger');
+    this.reportBrowseSpan = document.getElementById('reportBrowseSpan');
+    this.reportFileMetaCard = document.getElementById('reportFileMetaCard');
+    this.reportMetaName = document.getElementById('reportMetaName');
+    this.reportMetaType = document.getElementById('reportMetaType');
+    this.reportMetaSize = document.getElementById('reportMetaSize');
     this.uploadStatusIndicator = document.getElementById('uploadStatusIndicator');
     this.uploadStatusText = document.getElementById('uploadStatusText');
+    this.uploadErrorBanner = document.getElementById('uploadErrorBanner');
+    this.uploadErrorMsg = document.getElementById('uploadErrorMsg');
     this.uploadPredictBtn = document.getElementById('uploadPredictBtn');
 
     // Shared Output Panel
     this.outputPanel = document.getElementById('outputPanel');
 
-    // Initialize in Voice Analysis mode exclusively
-    this.switchMode('voice');
-
-    if (!this.container) return;
-
-    this.renderGroupedInputs();
-    this.attachEvents();
+    // 1. Attach top-level mode and action events immediately (Guaranteed execution)
+    this.attachModeEvents();
     this.attachVoiceEvents();
     this.attachReportUploadEvents();
-  }
+    this.attachManualEvents();
 
-  renderGroupedInputs() {
-    this.container.innerHTML = '';
-
-    FEATURE_GROUPS.forEach(group => {
-      const groupEl = document.createElement('div');
-      groupEl.className = 'feature-group-block';
-
-      groupEl.innerHTML = `
-        <div class="group-header">
-          <h4 class="group-title">${group.title}</h4>
-          <span class="group-desc">${group.description}</span>
-        </div>
-        <div class="group-inputs-grid" id="grid_${group.id}"></div>
-      `;
-
-      const gridEl = groupEl.querySelector(`#grid_${group.id}`);
-
-      group.features.forEach(f => {
-        const box = document.createElement('div');
-        box.className = 'input-box';
-
-        box.innerHTML = `
-          <div class="input-label-row">
-            <span class="input-name" title="${f.role}">${f.name}</span>
-            <span class="input-val-badge" id="val_${this.safeId(f.id)}">${this.formatVal(f.id, this.currentValues[f.id])}</span>
-          </div>
-          <input 
-            type="range" 
-            class="input-slider" 
-            id="range_${this.safeId(f.id)}" 
-            min="${f.min}" 
-            max="${f.max}" 
-            step="${f.step}" 
-            value="${this.currentValues[f.id]}"
-            aria-label="${f.name}"
-          />
-          <div class="input-limits">
-            <span>${f.min}</span>
-            <span>${f.unit}</span>
-            <span>${f.max}</span>
-          </div>
-        `;
-
-        gridEl.appendChild(box);
-      });
-
-      this.container.appendChild(groupEl);
-    });
-  }
-
-  safeId(str) {
-    return str.replace(/[^a-zA-Z0-9]/g, '_');
-  }
-
-  formatVal(featureId, val) {
-    if (val === undefined || isNaN(val)) return '—';
-    if (featureId === 'Jitter(Abs)') return val.toFixed(6);
-    if (featureId.includes('Jitter') || ['PPE', 'RPDE', 'DFA'].includes(featureId)) {
-      return val.toFixed(4);
+    // 2. Render manual input sliders if container is present
+    if (this.container) {
+      this.renderGroupedInputs();
+      this.attachSliderEvents();
     }
-    if (featureId === 'motor_UPDRS' || featureId === 'HNR') return val.toFixed(2);
-    if (featureId === 'age') return Math.round(val);
-    if (featureId === 'sex') return Math.round(val) === 1 ? '1 (M)' : '0 (F)';
-    return val.toFixed(3);
+
+    // 3. Set default initial view to 'voice'
+    this.switchMode('voice');
   }
 
-  attachEvents() {
-    // Mode Switchers
+  /* =========================================================================
+     Mode Switching (Voice, Clinical Report, Manual Calibration)
+     ========================================================================= */
+  attachModeEvents() {
     if (this.modeVoiceBtn) {
-      this.modeVoiceBtn.addEventListener('click', () => this.switchMode('voice'));
+      this.modeVoiceBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.switchMode('voice');
+      });
     }
     if (this.modeUploadBtn) {
-      this.modeUploadBtn.addEventListener('click', () => this.switchMode('upload'));
+      this.modeUploadBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.switchMode('upload');
+      });
     }
     if (this.modeManualBtn) {
-      this.modeManualBtn.addEventListener('click', () => this.switchMode('manual'));
-    }
-
-    // Manual slider inputs
-    ANOVA12_FEATURES.forEach(f => {
-      const input = document.getElementById(`range_${this.safeId(f.id)}`);
-      const badge = document.getElementById(`val_${this.safeId(f.id)}`);
-
-      if (input && badge) {
-        input.addEventListener('input', (e) => {
-          const num = parseFloat(e.target.value);
-          this.currentValues[f.id] = num;
-          badge.textContent = this.formatVal(f.id, num);
-          this.presetButtons.forEach(b => b.classList.remove('active'));
-        });
-      }
-    });
-
-    // Preset buttons
-    this.presetButtons.forEach(btn => {
-      btn.addEventListener('click', () => {
-        const key = btn.dataset.preset;
-        if (PRESETS[key]) {
-          this.loadPreset(key);
-          this.presetButtons.forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-        }
+      this.modeManualBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.switchMode('manual');
       });
-    });
-
-    // Predict button inside Upload Clinical Report mode
-    if (this.uploadPredictBtn) {
-      this.uploadPredictBtn.addEventListener('click', () => this.executeInference('qnn'));
-    }
-
-    // Predict button inside Manual Calibration mode
-    if (this.manualPredictBtn) {
-      this.manualPredictBtn.addEventListener('click', () => this.executeInference());
     }
   }
 
   switchMode(mode) {
     this.activeMode = mode;
+    console.log(`[QML-PD] Switched mode to: ${mode}`);
 
-    // Reset button active states
-    [this.modeVoiceBtn, this.modeUploadBtn, this.modeManualBtn].forEach(b => {
-      if (b) b.classList.remove('active');
+    // Update Mode Buttons Active State
+    [
+      { btn: this.modeVoiceBtn, key: 'voice' },
+      { btn: this.modeUploadBtn, key: 'upload' },
+      { btn: this.modeManualBtn, key: 'manual' }
+    ].forEach(({ btn, key }) => {
+      if (btn) {
+        if (mode === key) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      }
     });
 
-    // Hide all sections completely
+    // Toggle Panels with high specificity
     if (this.voiceSection) {
-      this.voiceSection.classList.remove('active');
-      this.voiceSection.style.display = 'none';
-    }
-    if (this.uploadSection) {
-      this.uploadSection.classList.remove('active');
-      this.uploadSection.style.display = 'none';
-    }
-    if (this.manualSection) {
-      this.manualSection.classList.remove('active');
-      this.manualSection.style.display = 'none';
+      if (mode === 'voice') {
+        this.voiceSection.classList.add('active');
+        this.voiceSection.style.setProperty('display', 'block', 'important');
+      } else {
+        this.voiceSection.classList.remove('active');
+        this.voiceSection.style.setProperty('display', 'none', 'important');
+      }
     }
 
-    // Cleanly hide previous prediction output on mode switch so each view is clean
+    if (this.uploadSection) {
+      if (mode === 'upload') {
+        this.uploadSection.classList.add('active');
+        this.uploadSection.style.setProperty('display', 'block', 'important');
+      } else {
+        this.uploadSection.classList.remove('active');
+        this.uploadSection.style.setProperty('display', 'none', 'important');
+      }
+    }
+
+    if (this.manualSection) {
+      if (mode === 'manual') {
+        this.manualSection.classList.add('active');
+        this.manualSection.style.setProperty('display', 'block', 'important');
+        this.syncSlidersWithValues();
+      } else {
+        this.manualSection.classList.remove('active');
+        this.manualSection.style.setProperty('display', 'none', 'important');
+      }
+    }
+
+    // Clean up temporary alert banners on mode switch
+    this.hideVoiceError();
+    this.hideUploadError();
+
+    // Hide previous prediction results on tab switch so user has a fresh view
     if (this.outputPanel) {
       this.outputPanel.style.display = 'none';
     }
     if (this.voiceResultsCard) {
       this.voiceResultsCard.style.display = 'none';
     }
-    this.hideVoiceError();
-
-    // Activate selected mode exclusively
-    if (mode === 'voice') {
-      if (this.modeVoiceBtn) this.modeVoiceBtn.classList.add('active');
-      if (this.voiceSection) {
-        this.voiceSection.classList.add('active');
-        this.voiceSection.style.display = 'block';
-      }
-    } else if (mode === 'upload') {
-      if (this.modeUploadBtn) this.modeUploadBtn.classList.add('active');
-      if (this.uploadSection) {
-        this.uploadSection.classList.add('active');
-        this.uploadSection.style.display = 'block';
-      }
-    } else {
-      if (this.modeManualBtn) this.modeManualBtn.classList.add('active');
-      if (this.manualSection) {
-        this.manualSection.classList.add('active');
-        this.manualSection.style.display = 'block';
-      }
-      this.syncSlidersWithValues();
-    }
   }
 
   /* =========================================================================
-     Voice Analysis & Recording Functionality
+     Voice Analysis & Recording Studio
      ========================================================================= */
   attachVoiceEvents() {
-    // Voice sub-tabs (Record vs Upload)
-    if (this.tabVoiceRecord && this.tabVoiceUpload) {
+    // Voice Sub-tabs: Live Microphone vs Upload Audio File
+    if (this.tabVoiceRecord) {
       this.tabVoiceRecord.addEventListener('click', (e) => {
         e.preventDefault();
         this.switchVoiceTab('record');
       });
+    }
+
+    if (this.tabVoiceUpload) {
       this.tabVoiceUpload.addEventListener('click', (e) => {
         e.preventDefault();
         this.switchVoiceTab('upload');
+        // Automatically open the file selector when clicking the upload tab
+        if (this.voiceFileInput) {
+          this.voiceFileInput.click();
+        }
       });
     }
 
-    // Live Recording toggle
-    if (this.btnRecordToggle) {
-      this.btnRecordToggle.addEventListener('click', () => this.toggleRecording());
+    // Explicit "Upload Audio File" button inside the upload pane
+    if (this.btnVoiceUploadTrigger) {
+      this.btnVoiceUploadTrigger.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (this.voiceFileInput) {
+          this.voiceFileInput.click();
+        }
+      });
     }
 
-    // Clear / Discard audio
-    if (this.btnClearAudio) {
-      this.btnClearAudio.addEventListener('click', () => this.clearAudio());
+    // Click on browse span inside dropzone
+    if (this.voiceBrowseSpan) {
+      this.voiceBrowseSpan.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (this.voiceFileInput) {
+          this.voiceFileInput.click();
+        }
+      });
     }
 
-    // Voice file upload drag & drop
-    if (this.voiceDropzone && this.voiceFileInput) {
-      // Prevent synthetic click from bubbling back up to dropzone
+    // Voice file input change & click propagation prevention
+    if (this.voiceFileInput) {
       this.voiceFileInput.addEventListener('click', (e) => {
         e.stopPropagation();
       });
 
-      this.voiceDropzone.addEventListener('click', (e) => {
-        if (e.target !== this.voiceFileInput) {
-          this.voiceFileInput.click();
-        }
-      });
-
       this.voiceFileInput.addEventListener('change', (e) => {
         const file = e.target.files && e.target.files[0];
-        if (file) this.handleVoiceFile(file);
+        if (file) {
+          this.handleVoiceFile(file);
+        }
+      });
+    }
+
+    // Voice Dropzone click & drag-and-drop
+    if (this.voiceDropzone) {
+      this.voiceDropzone.addEventListener('click', (e) => {
+        if (e.target !== this.voiceFileInput && e.target !== this.btnVoiceUploadTrigger) {
+          if (this.voiceFileInput) this.voiceFileInput.click();
+        }
       });
 
       ['dragenter', 'dragover'].forEach(evt => {
@@ -392,39 +353,62 @@ export class RealPredictor {
       });
     }
 
+    // Start / Stop Recording Button
+    if (this.btnRecordToggle) {
+      this.btnRecordToggle.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.toggleRecording();
+      });
+    }
+
+    // Clear / Retake Audio Button
+    if (this.btnClearAudio) {
+      this.btnClearAudio.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.clearAudio();
+      });
+    }
+
     // Analyze Voice Action Button
     if (this.btnAnalyzeVoice) {
-      this.btnAnalyzeVoice.addEventListener('click', () => this.analyzeVoiceAndPredict());
+      this.btnAnalyzeVoice.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.analyzeVoiceAndPredict();
+      });
     }
   }
 
   switchVoiceTab(tab) {
     this.activeVoiceTab = tab;
+
     if (tab === 'record') {
       if (this.tabVoiceRecord) this.tabVoiceRecord.classList.add('active');
       if (this.tabVoiceUpload) this.tabVoiceUpload.classList.remove('active');
       if (this.paneVoiceRecord) {
         this.paneVoiceRecord.classList.add('active');
-        this.paneVoiceRecord.style.display = 'block';
+        this.paneVoiceRecord.style.setProperty('display', 'block', 'important');
       }
       if (this.paneVoiceUpload) {
         this.paneVoiceUpload.classList.remove('active');
-        this.paneVoiceUpload.style.display = 'none';
+        this.paneVoiceUpload.style.setProperty('display', 'none', 'important');
       }
     } else {
       if (this.tabVoiceUpload) this.tabVoiceUpload.classList.add('active');
       if (this.tabVoiceRecord) this.tabVoiceRecord.classList.remove('active');
       if (this.paneVoiceUpload) {
         this.paneVoiceUpload.classList.add('active');
-        this.paneVoiceUpload.style.display = 'block';
+        this.paneVoiceUpload.style.setProperty('display', 'block', 'important');
       }
       if (this.paneVoiceRecord) {
         this.paneVoiceRecord.classList.remove('active');
-        this.paneVoiceRecord.style.display = 'none';
+        this.paneVoiceRecord.style.setProperty('display', 'none', 'important');
       }
     }
   }
 
+  /* =========================================================================
+     Microphone Recording Implementation
+     ========================================================================= */
   async toggleRecording() {
     if (this.isRecording) {
       this.stopRecording();
@@ -437,15 +421,15 @@ export class RealPredictor {
     this.hideVoiceError();
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      this.showVoiceError("Live audio recording requires a modern browser with microphone support (Chrome, Edge, Firefox, Safari) and a secure context (https:// or localhost). Please switch to 'Upload Audio File' to submit your recording.");
+      this.showVoiceError("Live audio recording requires a browser with microphone support (Chrome, Edge, Firefox, Safari) and a secure context (https:// or localhost). Please use 'Upload Audio File' instead.");
       return;
     }
 
     try {
       this.audioChunks = [];
       this.recordedAudioBlob = null;
+      this.recordingSeconds = 0;
 
-      // Robust dual-attempt getUserMedia
       let stream = null;
       try {
         stream = await navigator.mediaDevices.getUserMedia({
@@ -456,13 +440,13 @@ export class RealPredictor {
           }
         });
       } catch (strictErr) {
-        console.warn("Raw audio constraints rejected; retrying with generic audio stream...", strictErr);
+        console.warn("Raw constraints rejected, falling back to standard audio stream:", strictErr);
         stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       }
 
       this.mediaStream = stream;
 
-      // Detect best supported recording mimeType
+      // Select supported MediaRecorder MIME type
       let options = {};
       const mimeCandidates = [
         'audio/webm;codecs=opus',
@@ -484,8 +468,7 @@ export class RealPredictor {
 
       try {
         this.mediaRecorder = new MediaRecorder(stream, options);
-      } catch (recInitErr) {
-        console.warn("MediaRecorder failed with mimeType options; using default...", recInitErr);
+      } catch (err) {
         this.mediaRecorder = new MediaRecorder(stream);
       }
 
@@ -496,15 +479,22 @@ export class RealPredictor {
       };
 
       this.mediaRecorder.onstop = async () => {
-        const mimeType = (this.mediaRecorder && this.mediaRecorder.mimeType) || 'audio/webm';
-        const rawBlob = new Blob(this.audioChunks, { type: mimeType });
+        // Validation: Minimum recording duration is 5 seconds
+        if (this.recordingSeconds < 5) {
+          this.showVoiceError("Recording is too short. Please record for at least 5 seconds.");
+          this.clearAudio(false);
+          return;
+        }
+
+        const rawMime = (this.mediaRecorder && this.mediaRecorder.mimeType) || 'audio/webm';
+        const rawBlob = new Blob(this.audioChunks, { type: rawMime });
         this.uploadedAudioFile = null;
 
         try {
           // Convert browser WebM / Opus to true standard 16-bit PCM WAV for Praat
           this.recordedAudioBlob = await this.convertBlobToWav(rawBlob);
         } catch (convErr) {
-          console.warn("PCM WAV conversion fallback to raw recording:", convErr);
+          console.warn("PCM WAV conversion fallback to raw blob:", convErr);
           this.recordedAudioBlob = rawBlob;
         }
 
@@ -522,13 +512,20 @@ export class RealPredictor {
       this.recordingSeconds = 0;
       this.updateRecordingUI(true);
 
+      if (this.recordTimer) this.recordTimer.textContent = '00:00';
+
       this.recordingTimer = setInterval(() => {
         this.recordingSeconds++;
         const mins = String(Math.floor(this.recordingSeconds / 60)).padStart(2, '0');
         const secs = String(this.recordingSeconds % 60).padStart(2, '0');
         if (this.recordTimer) this.recordTimer.textContent = `${mins}:${secs}`;
+
         if (this.recordStatus) {
-          this.recordStatus.textContent = `🔴 Recording in progress... (${this.recordingSeconds}s / 10s) — Keep sustaining "aaah"`;
+          if (this.recordingSeconds < 5) {
+            this.recordStatus.textContent = `🔴 Recording... (${this.recordingSeconds}s / min 5s) — Keep sustaining steady "aaah"`;
+          } else {
+            this.recordStatus.textContent = `🟢 Optimal phonation reached (${this.recordingSeconds}s / max 10s) — Stop now or hold to 10s`;
+          }
         }
 
         // Auto-stop after 10 seconds of phonation
@@ -538,8 +535,12 @@ export class RealPredictor {
       }, 1000);
 
     } catch (err) {
-      console.error('Microphone access failed:', err);
-      this.showVoiceError("Microphone access was denied or is unavailable. Please click the lock or camera icon in your browser address bar to allow microphone access, or switch to the 'Upload Audio File' tab.");
+      console.error("Microphone access failed:", err);
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        this.showVoiceError("Microphone access was denied. Please allow microphone permission in your browser settings or use Upload Audio File instead.");
+      } else {
+        this.showVoiceError(`Microphone error: ${err.message || 'Device unavailable'}. Please use Upload Audio File instead.`);
+      }
     }
   }
 
@@ -652,12 +653,61 @@ export class RealPredictor {
     }
   }
 
+  /* =========================================================================
+     Audio File Upload Handling
+     ========================================================================= */
   handleVoiceFile(file) {
+    this.hideVoiceError();
+
+    if (!file) {
+      this.showVoiceError("No audio file was selected.");
+      return;
+    }
+
+    const validExtensions = ['.wav', '.mp3', '.m4a', '.ogg', '.flac', '.aac', '.webm'];
+    const lowerName = file.name.toLowerCase();
+    const hasValidExt = validExtensions.some(ext => lowerName.endsWith(ext));
+    const hasValidMime = file.type.startsWith('audio/') || file.type === '';
+
+    if (!hasValidExt && !hasValidMime) {
+      this.showVoiceError(`Unsupported audio format (${file.name}). Please select a valid WAV, MP3, M4A, OGG, or FLAC audio file.`);
+      return;
+    }
+
+    const maxSize = 25 * 1024 * 1024; // 25 MB
+    if (file.size > maxSize) {
+      this.showVoiceError(`The selected file is too large (${(file.size / (1024 * 1024)).toFixed(1)} MB). Please upload an audio sample under 25 MB.`);
+      return;
+    }
+
+    if (file.size < 100) {
+      this.showVoiceError("The selected file is empty or corrupted. Please provide a valid voice recording.");
+      return;
+    }
+
     this.uploadedAudioFile = file;
     this.recordedAudioBlob = null;
     const url = URL.createObjectURL(file);
-    const sizeStr = file.size > 1024 ? `${(file.size / 1024).toFixed(1)} KB` : `${file.size} B`;
-    this.showAudioPreview(url, file.name, 0, false, sizeStr);
+    const sizeStr = file.size > 1024 * 1024
+      ? `${(file.size / (1024 * 1024)).toFixed(2)} MB`
+      : `${(file.size / 1024).toFixed(1)} KB`;
+
+    // Attempt to read audio duration via AudioContext
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (AudioContextClass) {
+      const audioCtx = new AudioContextClass();
+      file.arrayBuffer().then(buf => audioCtx.decodeAudioData(buf)).then(decoded => {
+        const durationSec = decoded.duration;
+        this.showAudioPreview(url, file.name, durationSec, false, sizeStr);
+        if (audioCtx.close) audioCtx.close();
+      }).catch(err => {
+        console.warn("Could not pre-decode audio duration:", err);
+        this.showAudioPreview(url, file.name, 0, false, sizeStr);
+        if (audioCtx.close) audioCtx.close();
+      });
+    } else {
+      this.showAudioPreview(url, file.name, 0, false, sizeStr);
+    }
   }
 
   showAudioPreview(url, filename, durationSec, isRecorded = true, sizeStr = '') {
@@ -666,7 +716,7 @@ export class RealPredictor {
     this.voiceAudioPlayer.src = url;
 
     if (this.previewBadge) {
-      this.previewBadge.textContent = isRecorded ? 'RECORDED PHONATION' : 'UPLOADED AUDIO';
+      this.previewBadge.textContent = isRecorded ? 'VOICE SAMPLE' : 'VOICE SAMPLE';
     }
 
     if (this.previewFilename) {
@@ -675,11 +725,9 @@ export class RealPredictor {
 
     if (this.previewDuration) {
       if (durationSec > 0) {
-        const m = String(Math.floor(durationSec / 60)).padStart(2, '0');
-        const s = String(Math.round(durationSec % 60)).padStart(2, '0');
-        this.previewDuration.textContent = `${m}:${s}`;
+        this.previewDuration.textContent = `Duration: ${durationSec.toFixed(1)} seconds`;
       } else {
-        this.previewDuration.textContent = sizeStr || 'Audio ready';
+        this.previewDuration.textContent = sizeStr ? `Size: ${sizeStr}` : 'Audio sample ready';
       }
     }
 
@@ -687,7 +735,7 @@ export class RealPredictor {
     this.hideVoiceError();
   }
 
-  clearAudio() {
+  clearAudio(resetErrors = true) {
     this.recordedAudioBlob = null;
     this.uploadedAudioFile = null;
     this.isRecording = false;
@@ -708,7 +756,7 @@ export class RealPredictor {
     if (this.audioPreviewStrip) this.audioPreviewStrip.style.display = 'none';
     if (this.voiceFileInput) this.voiceFileInput.value = '';
     if (this.recordTimer) this.recordTimer.textContent = '00:00';
-    if (this.recordStatus) this.recordStatus.textContent = 'Click "Start Recording" and sustain steady vowel "aaah" (5–10s)';
+    if (this.recordStatus) this.recordStatus.textContent = 'Click "Start Recording" & sustain vowel "aaah" (5–10s)';
     if (this.recorderBox) this.recorderBox.classList.remove('recording');
     if (this.btnRecordToggle) {
       this.btnRecordToggle.classList.remove('recording');
@@ -716,12 +764,12 @@ export class RealPredictor {
     }
 
     if (this.voiceResultsCard) this.voiceResultsCard.style.display = 'none';
-    this.hideVoiceError();
+    if (resetErrors) this.hideVoiceError();
   }
 
   showVoiceError(message) {
     if (this.voiceErrorBanner && this.voiceErrorMsg) {
-      this.voiceErrorMsg.innerHTML = `<strong>Acoustic Quality Notice:</strong> ${message}`;
+      this.voiceErrorMsg.innerHTML = `<strong>Acoustic Notice:</strong> ${message}`;
       this.voiceErrorBanner.style.display = 'flex';
       this.voiceErrorBanner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
@@ -731,10 +779,13 @@ export class RealPredictor {
     if (this.voiceErrorBanner) this.voiceErrorBanner.style.display = 'none';
   }
 
+  /* =========================================================================
+     Voice Inference Pipeline
+     ========================================================================= */
   async analyzeVoiceAndPredict() {
     const audioData = this.recordedAudioBlob || this.uploadedAudioFile;
     if (!audioData) {
-      this.showVoiceError("No voice sample provided. Please click <strong>Start Recording</strong> to speak or upload an audio file (.wav/.mp3).");
+      this.showVoiceError("No voice sample provided. Please click <strong>Start Recording</strong> to speak or <strong>Upload Audio File</strong> to select a recording.");
       return;
     }
 
@@ -743,7 +794,6 @@ export class RealPredictor {
     const age = parseFloat(this.voiceInputAge ? this.voiceInputAge.value : 65);
     const sex = parseFloat(this.voiceInputSex ? this.voiceInputSex.value : 1.0);
     const motorUPDRS = parseFloat(this.voiceInputUPDRS ? this.voiceInputUPDRS.value : 21.34);
-    const selectedModel = this.realModelSelectVoice ? this.realModelSelectVoice.value : 'qnn';
 
     // Show loading state
     if (this.btnAnalyzeVoice) {
@@ -753,7 +803,7 @@ export class RealPredictor {
     if (this.voiceLoadingSpinner) {
       this.voiceLoadingSpinner.style.display = 'flex';
       if (this.voiceSpinnerText) {
-        this.voiceSpinnerText.textContent = 'Extracting Praat Jitter & Shimmer...';
+        this.voiceSpinnerText.textContent = 'Processing audio & extracting Praat Jitter/Shimmer...';
         setTimeout(() => {
           if (this.voiceSpinnerText) this.voiceSpinnerText.textContent = 'Calculating RPDE, DFA, and Pitch Period Entropy...';
         }, 800);
@@ -766,7 +816,7 @@ export class RealPredictor {
     const formData = new FormData();
     const filename = this.uploadedAudioFile ? this.uploadedAudioFile.name : 'voice_recording.wav';
     formData.append('file', audioData, filename);
-    formData.append('model', selectedModel);
+    formData.append('model', 'qnn');
     formData.append('age', age);
     formData.append('sex', sex);
     formData.append('motor_UPDRS', motorUPDRS);
@@ -814,7 +864,6 @@ export class RealPredictor {
     const f = analysis.features;
     const q = analysis.audio_quality;
 
-    // Categorized feature data with normative thresholds
     const isNormal = (val, maxThreshold) => val < maxThreshold;
 
     this.voiceResultsCard.innerHTML = `
@@ -924,64 +973,44 @@ export class RealPredictor {
           </div>
         </div>
 
-        <!-- 3. Spectral Harmonicity & Noise -->
+        <!-- 3. Spectral & Nonlinear Dynamics -->
         <div class="voice-cat-col">
           <div class="voice-cat-title">
-            <span>Noise &amp; Harmonicity</span>
-            <small>SPECTRAL</small>
+            <span>Harmonicity &amp; Complexity</span>
+            <small>SPECTRAL DYNAMICS</small>
           </div>
           <div class="voice-metric-item">
-            <span class="voice-metric-name">Harmonics-to-Noise (HNR)</span>
+            <span class="voice-metric-name">HNR</span>
             <div class="voice-metric-val-wrap">
               <span class="voice-metric-val">${f.hnr} dB</span>
-              <span class="voice-status-tag ${f.hnr >= 20.0 ? 'normal' : 'elevated'}">
-                ${f.hnr >= 20.0 ? 'Preserved' : 'Turbulent'}
+              <span class="voice-status-tag ${f.hnr > 20 ? 'normal' : 'elevated'}">
+                ${f.hnr > 20 ? 'Optimal' : 'Low'}
               </span>
             </div>
           </div>
           <div class="voice-metric-item">
-            <span class="voice-metric-name">Noise-to-Harmonics (NHR)</span>
+            <span class="voice-metric-name">NHR</span>
             <div class="voice-metric-val-wrap">
               <span class="voice-metric-val">${f.nhr}</span>
-              <span class="voice-status-tag ${f.nhr < 0.05 ? 'normal' : 'elevated'}">
-                ${f.nhr < 0.05 ? 'Normal' : 'Elevated'}
-              </span>
             </div>
           </div>
           <div class="voice-metric-item">
-            <span class="voice-metric-name">Glottal Cycles Analyzed</span>
-            <div class="voice-metric-val-wrap">
-              <span class="voice-metric-val">${q.glottal_cycles}</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 4. Nonlinear Dynamics & Complexity -->
-        <div class="voice-cat-col">
-          <div class="voice-cat-title">
-            <span>Nonlinear Dynamics</span>
-            <small>COMPLEXITY</small>
-          </div>
-          <div class="voice-metric-item">
-            <span class="voice-metric-name">RPDE (Recurrence Entropy)</span>
+            <span class="voice-metric-name">RPDE</span>
             <div class="voice-metric-val-wrap">
               <span class="voice-metric-val">${f.rpde}</span>
-              <span class="voice-status-tag ${isNormal(f.rpde, 0.54) ? 'normal' : 'elevated'}">
-                ${isNormal(f.rpde, 0.54) ? 'Normal' : 'Elevated'}
+              <span class="voice-status-tag ${isNormal(f.rpde, 0.55) ? 'normal' : 'elevated'}">
+                ${isNormal(f.rpde, 0.55) ? 'Normal' : 'Elevated'}
               </span>
             </div>
           </div>
           <div class="voice-metric-item">
-            <span class="voice-metric-name">DFA (Fractal Scaling)</span>
+            <span class="voice-metric-name">DFA</span>
             <div class="voice-metric-val-wrap">
               <span class="voice-metric-val">${f.dfa}</span>
-              <span class="voice-status-tag ${isNormal(f.dfa, 0.70) ? 'normal' : 'elevated'}">
-                ${isNormal(f.dfa, 0.70) ? 'Normal' : 'Elevated'}
-              </span>
             </div>
           </div>
           <div class="voice-metric-item">
-            <span class="voice-metric-name">PPE (Pitch Period Entropy)</span>
+            <span class="voice-metric-name">PPE</span>
             <div class="voice-metric-val-wrap">
               <span class="voice-metric-val">${f.ppe}</span>
               <span class="voice-status-tag ${isNormal(f.ppe, 0.22) ? 'normal' : 'elevated'}">
@@ -1001,59 +1030,123 @@ export class RealPredictor {
   }
 
   /* =========================================================================
-     Clinical Report Upload Functionality
+     Clinical Report Upload & Processing
      ========================================================================= */
   attachReportUploadEvents() {
-    if (!this.reportDropzone || !this.reportFileInput) return;
+    if (this.reportFileInput) {
+      this.reportFileInput.addEventListener('click', (e) => {
+        e.stopPropagation();
+      });
 
-    // Prevent click on file input from bubbling back up to dropzone
-    this.reportFileInput.addEventListener('click', (e) => {
-      e.stopPropagation();
-    });
+      this.reportFileInput.addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (file) this.handleReportFile(file);
+      });
+    }
 
-    this.reportDropzone.addEventListener('click', (e) => {
-      if (e.target !== this.reportFileInput) {
-        this.reportFileInput.click();
-      }
-    });
-
-    this.reportFileInput.addEventListener('change', (e) => {
-      const file = e.target.files && e.target.files[0];
-      if (file) this.handleReportFile(file);
-    });
-
-    ['dragenter', 'dragover'].forEach(name => {
-      this.reportDropzone.addEventListener(name, (e) => {
+    if (this.btnReportUploadTrigger) {
+      this.btnReportUploadTrigger.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        this.reportDropzone.classList.add('drag-active');
+        if (this.reportFileInput) this.reportFileInput.click();
       });
-    });
+    }
 
-    ['dragleave', 'drop'].forEach(name => {
-      this.reportDropzone.addEventListener(name, (e) => {
+    if (this.reportBrowseSpan) {
+      this.reportBrowseSpan.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        this.reportDropzone.classList.remove('drag-active');
+        if (this.reportFileInput) this.reportFileInput.click();
       });
-    });
+    }
 
-    this.reportDropzone.addEventListener('drop', (e) => {
-      const dt = e.dataTransfer;
-      const file = dt && dt.files && dt.files[0];
-      if (file) this.handleReportFile(file);
-    });
+    if (this.reportDropzone) {
+      this.reportDropzone.addEventListener('click', (e) => {
+        if (e.target !== this.reportFileInput && e.target !== this.btnReportUploadTrigger) {
+          if (this.reportFileInput) this.reportFileInput.click();
+        }
+      });
+
+      ['dragenter', 'dragover'].forEach(name => {
+        this.reportDropzone.addEventListener(name, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          this.reportDropzone.classList.add('drag-active');
+        });
+      });
+
+      ['dragleave', 'drop'].forEach(name => {
+        this.reportDropzone.addEventListener(name, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          this.reportDropzone.classList.remove('drag-active');
+        });
+      });
+
+      this.reportDropzone.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        const file = dt && dt.files && dt.files[0];
+        if (file) this.handleReportFile(file);
+      });
+    }
+
+    if (this.uploadPredictBtn) {
+      this.uploadPredictBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.processReportAndPredict();
+      });
+    }
   }
 
-  async handleReportFile(file) {
+  handleReportFile(file) {
+    this.hideUploadError();
+    if (!file) return;
+
+    this.selectedReportFile = file;
+    const sizeStr = file.size > 1024 * 1024
+      ? `${(file.size / (1024 * 1024)).toFixed(2)} MB`
+      : `${(file.size / 1024).toFixed(1)} KB`;
+
+    let fileType = 'Clinical Document';
+    const lowerName = file.name.toLowerCase();
+    if (lowerName.endsWith('.pdf')) fileType = 'PDF Medical Report';
+    else if (lowerName.endsWith('.csv')) fileType = 'CSV Data Table';
+    else if (lowerName.endsWith('.json')) fileType = 'JSON Clinical Record';
+    else if (lowerName.endsWith('.txt')) fileType = 'Clinical Text Export';
+
+    if (this.reportFileMetaCard) {
+      if (this.reportMetaName) this.reportMetaName.textContent = file.name;
+      if (this.reportMetaType) this.reportMetaType.textContent = fileType;
+      if (this.reportMetaSize) this.reportMetaSize.textContent = sizeStr;
+      this.reportFileMetaCard.style.display = 'block';
+    }
+
+    if (this.uploadStatusIndicator && this.uploadStatusText) {
+      this.uploadStatusIndicator.style.display = 'flex';
+      this.uploadStatusText.textContent = `Report selected: ${file.name} (${sizeStr}). Click "Process Clinical Report" below.`;
+    }
+  }
+
+  async processReportAndPredict() {
+    this.hideUploadError();
+
+    if (!this.selectedReportFile) {
+      this.showUploadError("Please select a clinical report file (PDF, CSV, JSON, or TXT) first.");
+      return;
+    }
+
+    const file = this.selectedReportFile;
     const sizeStr = file.size > 1024 ? `${(file.size / 1024).toFixed(1)} KB` : `${file.size} B`;
 
-    if (file.name.toLowerCase().endsWith('.pdf')) {
-      if (this.uploadStatusIndicator && this.uploadStatusText) {
-        this.uploadStatusIndicator.style.display = 'flex';
-        this.uploadStatusText.textContent = `Analyzing PDF report: ${file.name} (${sizeStr})...`;
-      }
-      try {
+    if (this.uploadPredictBtn) {
+      this.uploadPredictBtn.disabled = true;
+      this.uploadPredictBtn.innerHTML = '<span>Processing clinical report...</span>';
+    }
+
+    try {
+      let extracted = {};
+
+      if (file.name.toLowerCase().endsWith('.pdf')) {
         const formData = new FormData();
         formData.append('file', file);
         const res = await fetch(`${this.apiBase}/api/report/extract`, {
@@ -1062,42 +1155,65 @@ export class RealPredictor {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || 'PDF parsing failed');
-
-        let extractedCount = 0;
-        ANOVA12_FEATURES.forEach(f => {
-          if (data.extracted_features && data.extracted_features[f.id] !== undefined) {
-            this.currentValues[f.id] = data.extracted_features[f.id];
-            extractedCount++;
-          }
-        });
-        this.syncSlidersWithValues();
-
-        if (this.uploadStatusIndicator && this.uploadStatusText) {
-          this.uploadStatusIndicator.style.display = 'flex';
-          this.uploadStatusText.textContent = `PDF Clinical Report loaded: ${file.name} (${sizeStr}) — ${extractedCount}/12 Biomarkers verified. Ready to predict.`;
-        }
-      } catch (err) {
-        console.error('PDF parsing error:', err);
-        if (this.uploadStatusIndicator && this.uploadStatusText) {
-          this.uploadStatusIndicator.style.display = 'flex';
-          this.uploadStatusText.textContent = `Report loaded (${file.name}): Cohort baseline parameters applied. Ready to predict.`;
-        }
+        extracted = data.extracted_features || {};
+      } else {
+        // Parse CSV, JSON, or TXT directly
+        const text = await file.text();
+        extracted = this.parseReportText(text);
       }
-      return;
-    }
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const content = e.target.result;
-      this.processReportText(content, file.name, sizeStr);
-    };
-    reader.onerror = () => {
-      alert("Failed to read report file. Please upload a valid .pdf, .csv, .json, or .txt file.");
-    };
-    reader.readAsText(file);
+      // STRICT VALIDATION: Do NOT fabricate missing values!
+      const REQUIRED_FEATURES = [
+        "motor_UPDRS", "age", "sex", "PPE", "RPDE", "HNR", "DFA",
+        "Jitter(%)", "Jitter(Abs)", "Jitter:RAP", "Jitter:PPQ5", "Jitter:DDP"
+      ];
+
+      const missing = REQUIRED_FEATURES.filter(f => extracted[f] === undefined || isNaN(extracted[f]));
+
+      if (missing.length > 0) {
+        throw new Error(`Required feature "${missing[0]}" not found in the uploaded report. Please ensure the clinical report contains standardized telemonitoring values.`);
+      }
+
+      // All 12 required features are present!
+      this.currentValues = { ...this.currentValues, ...extracted };
+      this.syncSlidersWithValues();
+
+      if (this.uploadStatusIndicator && this.uploadStatusText) {
+        this.uploadStatusIndicator.style.display = 'flex';
+        this.uploadStatusText.textContent = `Clinical report processed successfully (${file.name}): 12/12 Biomarkers verified. Running prediction...`;
+      }
+
+      // Execute prediction with True QNN model
+      const predRes = await fetch(`${this.apiBase}/api/predict`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'qnn',
+          features: this.currentValues
+        })
+      });
+
+      const predData = await predRes.json();
+      if (!predRes.ok) throw new Error(predData.detail || 'Prediction failed');
+
+      this.renderOutput(predData);
+
+      if (this.outputPanel) {
+        this.outputPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+
+    } catch (err) {
+      console.error('Report processing error:', err);
+      this.showUploadError(err.message || "Failed to process clinical report.");
+    } finally {
+      if (this.uploadPredictBtn) {
+        this.uploadPredictBtn.disabled = false;
+        this.uploadPredictBtn.innerHTML = '<span>Process Clinical Report</span><span class="btn-arrow">→</span>';
+      }
+    }
   }
 
-  processReportText(text, filename, sizeStr) {
+  parseReportText(text) {
     const extracted = {};
 
     try {
@@ -1110,7 +1226,9 @@ export class RealPredictor {
           if (!isNaN(val)) extracted[canonical] = val;
         }
       });
+      return extracted;
     } catch (_) {
+      // Plain text or CSV parsing
       const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
 
       if (lines.length >= 2 && lines[0].includes(',')) {
@@ -1129,30 +1247,16 @@ export class RealPredictor {
       ANOVA12_FEATURES.forEach(f => {
         if (extracted[f.id] === undefined) {
           const escapedName = f.name.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
-          const regex = new RegExp(`(?:${escapedName}|${f.id})\\s*[:=,]\\s*([0-9.]+)`, 'i');
+          const regex = new RegExp(`(?:^|[\\s,;])(?:${escapedName}|${f.id})\\s*[:=,\t]\\s*([0-9.]+)`, 'i');
           const match = text.match(regex);
           if (match && match[1]) {
-            extracted[f.id] = parseFloat(match[1]);
+            const val = parseFloat(match[1]);
+            if (!isNaN(val)) extracted[f.id] = val;
           }
         }
       });
-    }
 
-    let extractedCount = 0;
-    ANOVA12_FEATURES.forEach(f => {
-      if (extracted[f.id] !== undefined && !isNaN(extracted[f.id])) {
-        extractedCount++;
-      } else {
-        extracted[f.id] = f.default;
-      }
-    });
-
-    this.currentValues = { ...extracted };
-    this.syncSlidersWithValues();
-
-    if (this.uploadStatusIndicator && this.uploadStatusText) {
-      this.uploadStatusIndicator.style.display = 'flex';
-      this.uploadStatusText.textContent = `Report loaded: ${filename} (${sizeStr}) — ${extractedCount}/12 ANOVA Biomarkers standard-calibrated. Ready to predict.`;
+      return extracted;
     }
   }
 
@@ -1191,6 +1295,130 @@ export class RealPredictor {
     return ALIAS_MAP[clean] || null;
   }
 
+  showUploadError(msg) {
+    if (this.uploadErrorBanner && this.uploadErrorMsg) {
+      this.uploadErrorMsg.textContent = msg;
+      this.uploadErrorBanner.style.display = 'flex';
+    }
+  }
+
+  hideUploadError() {
+    if (this.uploadErrorBanner) {
+      this.uploadErrorBanner.style.display = 'none';
+    }
+  }
+
+  /* =========================================================================
+     Research / Manual Calibration
+     ========================================================================= */
+  attachManualEvents() {
+    if (this.presetButtons) {
+      this.presetButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const key = btn.dataset.preset;
+          if (PRESETS[key]) {
+            this.loadPreset(key);
+            this.presetButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+          }
+        });
+      });
+    }
+
+    if (this.manualPredictBtn) {
+      this.manualPredictBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.executeInference();
+      });
+    }
+  }
+
+  renderGroupedInputs() {
+    if (!this.container) return;
+    this.container.innerHTML = '';
+
+    FEATURE_GROUPS.forEach(group => {
+      const groupEl = document.createElement('div');
+      groupEl.className = 'feature-group-block';
+
+      groupEl.innerHTML = `
+        <div class="group-header">
+          <h4 class="group-title">${group.title}</h4>
+          <span class="group-desc">${group.description}</span>
+        </div>
+        <div class="group-inputs-grid" id="grid_${group.id}"></div>
+      `;
+
+      const gridEl = groupEl.querySelector(`#grid_${group.id}`);
+
+      group.features.forEach(f => {
+        const box = document.createElement('div');
+        box.className = 'input-box';
+
+        box.innerHTML = `
+          <div class="input-label-row">
+            <span class="input-name" title="${f.role}">${f.name}</span>
+            <span class="input-val-badge" id="val_${this.safeId(f.id)}">${this.formatVal(f.id, this.currentValues[f.id])}</span>
+          </div>
+          <input 
+            type="range" 
+            class="input-slider" 
+            id="range_${this.safeId(f.id)}" 
+            min="${f.min}" 
+            max="${f.max}" 
+            step="${f.step}" 
+            value="${this.currentValues[f.id]}"
+            aria-label="${f.name}"
+          />
+          <div class="input-limits">
+            <span>${f.min}</span>
+            <span>${f.unit}</span>
+            <span>${f.max}</span>
+          </div>
+        `;
+
+        gridEl.appendChild(box);
+      });
+
+      this.container.appendChild(groupEl);
+    });
+  }
+
+  attachSliderEvents() {
+    ANOVA12_FEATURES.forEach(f => {
+      const input = document.getElementById(`range_${this.safeId(f.id)}`);
+      const badge = document.getElementById(`val_${this.safeId(f.id)}`);
+
+      if (input && badge) {
+        input.addEventListener('input', (e) => {
+          const num = parseFloat(e.target.value);
+          this.currentValues[f.id] = num;
+          badge.textContent = this.formatVal(f.id, num);
+          if (this.presetButtons) {
+            this.presetButtons.forEach(b => b.classList.remove('active'));
+          }
+        });
+      }
+    });
+  }
+
+  safeId(str) {
+    return str.replace(/[^a-zA-Z0-9]/g, '_');
+  }
+
+  formatVal(featureId, val) {
+    if (val === undefined || isNaN(val)) return '—';
+    if (featureId === 'Jitter(Abs)') return val.toFixed(6);
+    if (featureId.includes('Jitter') || ['PPE', 'RPDE', 'DFA'].includes(featureId)) {
+      return val.toFixed(4);
+    }
+    if (featureId === 'motor_UPDRS' || featureId === 'HNR') return val.toFixed(2);
+    if (featureId === 'age') return Math.round(val);
+    if (featureId === 'sex') return Math.round(val) === 1 ? '1 (M)' : '0 (F)';
+    return val.toFixed(3);
+  }
+
   syncSlidersWithValues() {
     ANOVA12_FEATURES.forEach(f => {
       const val = this.currentValues[f.id];
@@ -1215,17 +1443,14 @@ export class RealPredictor {
   }
 
   /* =========================================================================
-     Prediction Execution (Manual & Report Mode)
+     Prediction Execution (Manual Calibration)
      ========================================================================= */
-  async executeInference(forcedModel = null) {
-    const selectedModel = forcedModel 
-      ? forcedModel 
-      : (this.modelSelect ? this.modelSelect.value : 'qnn');
+  async executeInference() {
+    const selectedModel = this.modelSelect ? this.modelSelect.value : 'qnn';
 
-    const activeBtn = (this.activeMode === 'upload') ? this.uploadPredictBtn : this.manualPredictBtn;
-    if (activeBtn) {
-      activeBtn.disabled = true;
-      activeBtn.innerHTML = '<span>Executing Quantum / Classical Inference...</span>';
+    if (this.manualPredictBtn) {
+      this.manualPredictBtn.disabled = true;
+      this.manualPredictBtn.innerHTML = '<span>Running prediction...</span>';
     }
 
     try {
@@ -1254,11 +1479,9 @@ export class RealPredictor {
       console.error('Inference error:', err);
       alert(`Inference failed: ${err.message}. Please ensure the backend is running.`);
     } finally {
-      if (activeBtn) {
-        activeBtn.disabled = false;
-        activeBtn.innerHTML = (this.activeMode === 'upload')
-          ? '<span>Predict from Uploaded Report</span><span class="btn-arrow">→</span>'
-          : '<span>Predict Parkinson\'s Severity</span><span class="btn-arrow">→</span>';
+      if (this.manualPredictBtn) {
+        this.manualPredictBtn.disabled = false;
+        this.manualPredictBtn.innerHTML = '<span>Run Prediction</span><span class="btn-arrow">→</span>';
       }
     }
   }
@@ -1335,7 +1558,7 @@ export class RealPredictor {
       });
     }
 
-    // Render AI Diagnostic Analysis & Clinical Description
+    // Render AI Diagnostic Analysis
     const aiSummaryText = document.getElementById('aiSummaryText');
     const aiRiskNote = document.getElementById('aiRiskNote');
     const aiBiomarkerNote = document.getElementById('aiBiomarkerNote');

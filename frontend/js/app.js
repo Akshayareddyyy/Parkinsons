@@ -5,22 +5,48 @@
 
 import { RealPredictor } from './predictor.js';
 
-document.addEventListener('DOMContentLoaded', () => {
-  // 1. Initialize Real Predictor Engine
-  const predictor = new RealPredictor();
+function initApp() {
+  console.log('[QML-PD] Initializing platform application coordinator...');
+  try {
+    const predictor = new RealPredictor();
+    window.predictor = predictor;
+    window.qmlPredictor = predictor;
+    console.log('[QML-PD] Predictor engine initialized successfully.');
+  } catch (err) {
+    console.error('[QML-PD] Failed to initialize RealPredictor:', err);
+  }
 
-  // 2. Setup Smooth Navigation Spy
-  setupNavigationSpy();
+  try {
+    setupNavigationSpy();
+  } catch (e) {
+    console.warn('Navigation spy init error:', e);
+  }
 
-  // 3. Setup Methodology Sequence Scroll Animation
-  setupMethodologyScrollAnimation();
+  try {
+    setupMethodologyScrollAnimation();
+  } catch (e) {
+    console.warn('Methodology scroll animation error:', e);
+  }
 
-  // 4. Setup Dynamic Stat Count-Up Animations
-  setupStatCounterAnimations();
+  try {
+    setupStatCounterAnimations();
+  } catch (e) {
+    console.warn('Stat counter animations error:', e);
+  }
 
-  // 5. Setup Scroll Text & Card Reveals
-  setupScrollTextRevealAnimations();
-});
+  try {
+    setupScrollTextRevealAnimations();
+  } catch (e) {
+    console.warn('Text reveal animations error:', e);
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
+  // DOM is already ready; initialize immediately
+  initApp();
+}
 
 function setupNavigationSpy() {
   const sections = document.querySelectorAll('section[id]');

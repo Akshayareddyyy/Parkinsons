@@ -160,15 +160,15 @@
       <div class="prediction-main-card">
         <!-- Triple Mode Switcher -->
         <div class="mode-toggle-bar">
-          <button type="button" class="mode-btn active" id="modeVoiceBtn">
+          <button type="button" class="mode-btn active" id="modeVoiceBtn" onclick="window.predictor &amp;&amp; window.predictor.switchMode('voice')">
             <span class="mode-btn-icon">🎙️</span>
             <span>Voice Analysis</span>
           </button>
-          <button type="button" class="mode-btn" id="modeUploadBtn">
+          <button type="button" class="mode-btn" id="modeUploadBtn" onclick="window.predictor &amp;&amp; window.predictor.switchMode('upload')">
             <span class="mode-btn-icon">📄</span>
             <span>Upload Clinical Report / PDF</span>
           </button>
-          <button type="button" class="mode-btn" id="modeManualBtn">
+          <button type="button" class="mode-btn" id="modeManualBtn" onclick="window.predictor &amp;&amp; window.predictor.switchMode('manual')">
             <span class="mode-btn-icon">⚙️</span>
             <span>Research / Manual Calibration</span>
           </button>
@@ -225,7 +225,12 @@
                 <input type="file" id="voiceFileInput" class="file-input-hidden" accept="audio/*,.wav,.mp3,.m4a,.ogg,.flac" />
                 <div class="dropzone-icon-circle">🎙️</div>
                 <div class="dropzone-title-main">Upload Sustained Phonation Audio</div>
-                <p class="dropzone-hint-text">Drag and drop audio file here, or <span class="browse-link-styled">browse from device</span></p>
+                <p class="dropzone-hint-text">Drag and drop audio file here, or <span class="browse-link-styled" id="voiceBrowseSpan">browse from device</span></p>
+                <div class="dropzone-btn-row" style="margin: 0.85rem 0;">
+                  <button type="button" class="btn-browse-accent" id="btnVoiceUploadTrigger">
+                    <span>📁</span> Upload Audio File
+                  </button>
+                </div>
                 <span class="dropzone-formats-badge">Accepts: WAV, MP3, M4A, OGG, FLAC (Recommended: 44.1 kHz, mono)</span>
               </div>
             </div>
@@ -233,9 +238,9 @@
             <!-- Audio Preview Strip (displays once recorded or uploaded) -->
             <div class="audio-preview-strip" id="audioPreviewStrip" style="display: none;">
               <div class="preview-meta">
-                <span class="preview-badge" id="previewBadge">RECORDED SAMPLE</span>
+                <span class="preview-badge" id="previewBadge">VOICE SAMPLE</span>
                 <strong class="preview-filename" id="previewFilename">voice_sample.wav</strong>
-                <span class="preview-duration" id="previewDuration">00:00</span>
+                <span class="preview-duration" id="previewDuration">Duration: 0.0s</span>
               </div>
               <audio id="voiceAudioPlayer" controls class="custom-audio-player"></audio>
               <button type="button" class="btn-clear-audio" id="btnClearAudio" title="Discard audio and retake">✕ Retake</button>
@@ -309,9 +314,27 @@
             <div class="report-dropzone" id="reportDropzone">
               <input type="file" id="reportFileInput" class="file-input-hidden" accept=".pdf,.csv,.json,.txt" />
               <div class="dropzone-icon">📄</div>
-              <div class="dropzone-title">Upload Clinical Report / Diagnostic PDF</div>
-              <p class="dropzone-text">Drag and drop clinical report here, or <span class="browse-link">browse from computer</span></p>
+              <div class="dropzone-title">Upload Patient Diagnostic / Telemonitoring Report</div>
+              <p class="dropzone-text">Drag and drop clinical report here, or <span class="browse-link" id="reportBrowseSpan">browse from computer</span></p>
+              <div class="dropzone-btn-row" style="margin: 0.85rem 0;">
+                <button type="button" class="btn-browse-accent" id="btnReportUploadTrigger">
+                  <span>📁</span> Select Clinical Report (PDF, CSV, JSON, TXT)
+                </button>
+              </div>
               <span class="dropzone-formats">Supports PDF medical reports, CSV data tables, JSON records, and clinical text exports</span>
+            </div>
+
+            <!-- Upload File Meta Card (displays once file is selected) -->
+            <div class="report-file-meta-card" id="reportFileMetaCard" style="display: none;">
+              <div class="meta-card-header">
+                <span class="meta-icon">📋</span>
+                <span class="meta-title">Selected Clinical Report</span>
+              </div>
+              <div class="report-meta-grid">
+                <div class="meta-item"><span class="meta-label">File Name:</span> <strong id="reportMetaName" class="meta-val">—</strong></div>
+                <div class="meta-item"><span class="meta-label">File Type:</span> <strong id="reportMetaType" class="meta-val">—</strong></div>
+                <div class="meta-item"><span class="meta-label">File Size:</span> <strong id="reportMetaSize" class="meta-val">—</strong></div>
+              </div>
             </div>
 
             <!-- Upload Status Indicator -->
@@ -320,9 +343,15 @@
               <span class="status-text" id="uploadStatusText">Report loaded successfully</span>
             </div>
 
+            <!-- Upload Error Banner -->
+            <div class="upload-error-banner" id="uploadErrorBanner" style="display: none;">
+              <span class="error-icon">⚠️</span>
+              <div class="error-msg" id="uploadErrorMsg"></div>
+            </div>
+
             <div class="action-footer-bar">
               <button type="button" class="btn-predict-prominent" id="uploadPredictBtn">
-                <span>Predict from Uploaded Report</span>
+                <span>Process Clinical Report</span>
                 <span class="btn-arrow">→</span>
               </button>
             </div>
@@ -333,9 +362,9 @@
         <div id="manualModeSection" class="mode-section" style="display: none;">
           <div class="research-disclaimer-box">
             <div class="research-badge-row">
-              <span class="badge-research">RESEARCH &amp; SENSITIVITY TESTING CALIBRATION</span>
+              <span class="badge-research">RESEARCH / MANUAL CALIBRATION</span>
             </div>
-            <p>This calibration panel enables manual parameter sensitivity simulations. For patient telemonitoring, vocal measurements are extracted directly via the Voice Analysis tab or parsed from certified reports.</p>
+            <p>For research and demonstration purposes. In a production workflow, compatible measurements should be automatically obtained from validated clinical reports, sensors, or voice analysis.</p>
           </div>
 
           <div class="prediction-toolbar">
@@ -368,7 +397,7 @@
 
           <div class="action-footer-bar">
             <button type="button" class="btn-predict-prominent" id="manualPredictBtn">
-              <span>Predict Parkinson's Severity</span>
+              <span>Run Prediction</span>
               <span class="btn-arrow">→</span>
             </button>
           </div>
