@@ -7,13 +7,14 @@ import os
 from pathlib import Path
 from typing import Dict, Any, Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from backend.models.quantum_engine import QuantumInferenceEngine, ANOVA12_FEATURES
+from backend.voice_extractor import VoiceFeatureExtractor, VoiceExtractionError
 
 # -----------------------------------------------------------------------------
 # App & Engine Initialization
@@ -36,6 +37,7 @@ app.add_middleware(
 )
 
 engine = QuantumInferenceEngine()
+voice_extractor = VoiceFeatureExtractor()
 
 # -----------------------------------------------------------------------------
 # Request & Response Schemas
@@ -122,6 +124,91 @@ async def predict_severity(payload: PredictionRequest):
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Quantum inference execution failed: {str(e)}")
+
+
+# -----------------------------------------------------------------------------
+# Voice Acoustic Analysis Endpoints
+# -----------------------------------------------------------------------------
+@app.post("/api/voice/analyze")
+async def analyze_voice(file: UploadFile = File(...)):
+    """
+    Receives recorded or uploaded audio (WAV, MP3, M4A, OGG, WebM).
+    Validates audio signal quality, voicing sufficiency, and duration.
+    Extracts 16 acoustic dysphonia features (Jitter, Shimmer, HNR, NHR, RPDE, DFA, PPE)
+    using Praat Parselmouth and nonlinear dynamics algorithms.
+    """
+    max_bytes = 25 * 1024 * 1024
+    content = await file.read()
+    if len(content) == 0:
+        raise HTTPException(status_code=400, detail="Empty audio file uploaded.")
+    if len(content) > max_bytes:
+        raise HTTPException(status_code=400, detail="Audio file exceeds maximum 25 MB limit.")
+
+    try:
+        result = voice_extractor.extract_features(
+            audio_bytes=content,
+            filename=file.filename or "voice_recording.wav"
+        )
+        return result
+    except VoiceExtractionError as ve:
+        raise HTTPException(status_code=422, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Voice feature extraction failed: {str(e)}")
+
+
+@app.post("/api/voice/predict")
+async def analyze_and_predict_voice(
+    file: UploadFile = File(...),
+    model: str = Form("qnn"),
+    age: float = Form(65.0),
+    sex: float = Form(1.0),
+    motor_UPDRS: float = Form(21.34)
+):
+    """
+    End-to-end clinical workflow:
+    1. Receives voice audio sample
+    2. Validates and extracts 9 model-compatible acoustic biomarkers
+    3. Merges with physician/clinical parameters (age, sex, motor_UPDRS)
+    4. Executes trained QML/FL/ML model inference
+    5. Returns unified voice analysis + severity prediction + AI guidance
+    """
+    content = await file.read()
+    if len(content) == 0:
+        raise HTTPException(status_code=400, detail="Empty audio file provided.")
+
+    try:
+        # Step A: Voice feature extraction
+        voice_result = voice_extractor.extract_features(
+            audio_bytes=content,
+            filename=file.filename or "voice_sample.wav"
+        )
+        mapped = voice_result["mapped_model_features"]
+
+        # Step B: Assemble complete 12 ANOVA features
+        full_features = {
+            "age": float(age),
+            "sex": float(sex),
+            "motor_UPDRS": float(motor_UPDRS),
+            **mapped
+        }
+
+        # Step C: Execute quantum / classical inference pipeline
+        prediction = engine.predict(
+            model_type=model,
+            features_dict=full_features
+        )
+
+        return {
+            "success": True,
+            "voice_analysis": voice_result,
+            "prediction": prediction,
+            "assembled_features": full_features
+        }
+    except VoiceExtractionError as ve:
+        raise HTTPException(status_code=422, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Audio processing and prediction failed: {str(e)}")
+
 
 
 # -----------------------------------------------------------------------------

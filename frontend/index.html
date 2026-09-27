@@ -158,20 +158,175 @@
       </div>
 
       <div class="prediction-main-card">
-        <!-- Dual Mode Switcher -->
+        <!-- Triple Mode Switcher -->
         <div class="mode-toggle-bar">
-          <button type="button" class="mode-btn active" id="modeManualBtn">
-            <span>⚙️</span>
-            <span>Manual Parameter Calibration</span>
+          <button type="button" class="mode-btn active" id="modeVoiceBtn">
+            <span>🎙️</span>
+            <span>Voice Analysis (Acoustic Telemetry)</span>
           </button>
           <button type="button" class="mode-btn" id="modeUploadBtn">
             <span>📁</span>
             <span>Upload Clinical Report (.CSV / .JSON / .TXT)</span>
           </button>
+          <button type="button" class="mode-btn" id="modeManualBtn">
+            <span>⚙️</span>
+            <span>Research / Manual Calibration</span>
+          </button>
         </div>
 
-        <!-- 1. MANUAL INPUT MODE -->
-        <div id="manualModeSection">
+        <!-- 1. VOICE ANALYSIS MODE (PRIMARY & DEFAULT) -->
+        <div id="voiceModeSection">
+          <!-- Patient Voice Phonation Protocol -->
+          <div class="voice-protocol-banner">
+            <div class="protocol-icon">💡</div>
+            <div class="protocol-content">
+              <strong>Patient Voice Phonation Protocol:</strong> Hold your microphone approximately 5–10 cm from your mouth in a quiet room. Take a deep breath and vocalize a continuous, steady vowel sound <strong>"aaah"</strong> at your natural pitch and loudness for <strong>5 to 10 seconds</strong>. Avoid whispering or sudden volume shifts.
+            </div>
+          </div>
+
+          <!-- Dual Voice Input Card (Record vs Upload Tabs) -->
+          <div class="voice-input-card">
+            <div class="voice-tabs-header">
+              <button type="button" class="voice-tab active" id="tabVoiceRecord">
+                <span>🎙️</span> Live Audio Recording
+              </button>
+              <button type="button" class="voice-tab" id="tabVoiceUpload">
+                <span>📂</span> Upload Audio File (.WAV, .MP3, .M4A)
+              </button>
+            </div>
+
+            <!-- Tab 1: Live Browser Recording -->
+            <div class="voice-tab-pane active" id="paneVoiceRecord">
+              <div class="recorder-box">
+                <div class="recorder-visualizer-container">
+                  <div class="recorder-waveform" id="recordWaveform">
+                    <span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span>
+                    <span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span>
+                    <span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span>
+                    <span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span><span class="wave-bar"></span>
+                  </div>
+                  <div class="recorder-timer" id="recordTimer">00:00</div>
+                  <div class="recorder-status" id="recordStatus">Click "Start Recording" and sustain steady vowel "aaah" (5–10s)</div>
+                </div>
+
+                <div class="recorder-controls">
+                  <button type="button" class="btn-record-action start" id="btnRecordToggle">
+                    <span class="record-dot">●</span>
+                    <span id="btnRecordText">Start Recording</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tab 2: Audio File Upload -->
+            <div class="voice-tab-pane" id="paneVoiceUpload" style="display: none;">
+              <div class="audio-dropzone" id="voiceDropzone">
+                <input type="file" id="voiceFileInput" class="file-input-hidden" accept="audio/*,.wav,.mp3,.m4a,.ogg,.flac" />
+                <div class="dropzone-icon">🎙️</div>
+                <div class="dropzone-title">Upload Patient Phonation Audio File</div>
+                <p class="dropzone-text">Drag and drop file here, or <span class="browse-link">browse from computer</span></p>
+                <span class="dropzone-formats">Supported audio: WAV, MP3, M4A, OGG, FLAC (Recommended: 44.1 kHz, mono)</span>
+              </div>
+            </div>
+
+            <!-- Playback & Audio Preview Bar (shows once audio is recorded or chosen) -->
+            <div class="audio-preview-strip" id="audioPreviewStrip" style="display: none;">
+              <div class="preview-meta">
+                <span class="preview-badge" id="previewBadge">RECORDED SAMPLE</span>
+                <strong class="preview-filename" id="previewFilename">voice_sample.wav</strong>
+                <span class="preview-duration" id="previewDuration">00:00</span>
+              </div>
+              <audio id="voiceAudioPlayer" controls class="custom-audio-player"></audio>
+              <button type="button" class="btn-clear-audio" id="btnClearAudio" title="Clear audio and record again">✕ Discard</button>
+            </div>
+          </div>
+
+          <!-- Clinical & Demographic Context (Required by the 12-ANOVA Model) -->
+          <div class="clinical-context-card">
+            <div class="clinical-context-header">
+              <span class="context-title">Clinical &amp; Demographic Parameters</span>
+              <span class="context-subtitle">Acoustic tremor &amp; dysphonia features are extracted directly from your voice. Enter patient clinical context:</span>
+            </div>
+
+            <div class="clinical-inputs-row">
+              <div class="clinical-input-group">
+                <label for="voiceInputAge">Patient Age</label>
+                <div class="input-with-unit">
+                  <input type="number" id="voiceInputAge" class="clinical-input" min="30" max="95" value="65" />
+                  <span class="unit-tag">Years</span>
+                </div>
+              </div>
+
+              <div class="clinical-input-group">
+                <label for="voiceInputSex">Biological Sex</label>
+                <select id="voiceInputSex" class="clinical-select">
+                  <option value="1.0" selected>Male (1)</option>
+                  <option value="0.0">Female (0)</option>
+                </select>
+              </div>
+
+              <div class="clinical-input-group">
+                <label for="voiceInputUPDRS">
+                  motor_UPDRS Score
+                  <span class="info-tooltip" title="Physician-evaluated MDS-UPDRS Part III Motor Score (0-108). For initial telemonitoring screening without clinician visit, baseline cohort median (21.3) is used.">ℹ️</span>
+                </label>
+                <div class="input-with-unit">
+                  <input type="number" id="voiceInputUPDRS" class="clinical-input" min="0" max="100" step="0.1" value="21.3" />
+                  <span class="unit-tag">Score</span>
+                </div>
+                <span class="input-hint">Baseline cohort median: 21.3</span>
+              </div>
+
+              <div class="clinical-input-group">
+                <label for="realModelSelectVoice">Prediction Model</label>
+                <select id="realModelSelectVoice" class="clinical-select">
+                  <optgroup label="Quantum Machine Learning (PennyLane CPU)">
+                    <option value="qnn" selected>Quantum ML: True QNN (Phase 24 · 4-Qubit)</option>
+                    <option value="vqc">Quantum ML: Hybrid VQC (Phase 21 · 4-Qubit)</option>
+                  </optgroup>
+                  <optgroup label="Classical &amp; Federated Baselines">
+                    <option value="classical_rf">Classical ML: Centralized Random Forest (99.83%)</option>
+                    <option value="federated_rf">Federated ML: Federated Random Forest (100.00%)</option>
+                  </optgroup>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Analyze Action Button for Voice Mode -->
+          <div class="voice-action-bar">
+            <button type="button" class="btn-analyze-voice" id="btnAnalyzeVoice">
+              <span class="analyze-icon">🔬</span>
+              <span>Analyze Voice &amp; Predict Severity</span>
+              <span class="btn-arrow">→</span>
+            </button>
+            <div class="voice-loading-spinner" id="voiceLoadingSpinner" style="display: none;">
+              <span class="spinner-circle"></span>
+              <span class="spinner-text" id="voiceSpinnerText">Extracting Praat Jitter &amp; Shimmer...</span>
+            </div>
+          </div>
+
+          <!-- Validation Error Banner (if audio is poor quality, silent, or unvoiced) -->
+          <div class="voice-error-banner" id="voiceErrorBanner" style="display: none;">
+            <span class="error-icon">⚠️</span>
+            <div class="error-msg" id="voiceErrorMsg"></div>
+          </div>
+
+          <!-- Extracted Voice Biomarkers Dashboard (populates after extraction) -->
+          <div class="voice-results-card" id="voiceResultsCard" style="display: none;">
+            <!-- Populated dynamically with extracted features, normal ranges, and signal health -->
+          </div>
+        </div>
+
+        <!-- 2. RESEARCH / MANUAL CALIBRATION MODE -->
+        <div id="manualModeSection" style="display: none;">
+          <div class="research-disclaimer-box">
+            <div class="research-badge-row">
+              <span class="badge-research">RESEARCH &amp; DEMONSTRATION CALIBRATION</span>
+            </div>
+            <p>This panel allows manual simulation and sensitivity testing of individual biomarker parameters. In a clinical deployment, compatible vocal measurements are automatically extracted from patient voice recordings (via the Voice Analysis tab) or parsed directly from certified telemonitoring reports.</p>
+          </div>
+
           <div class="prediction-toolbar">
             <div class="preset-strip">
               <span class="toolbar-label">Clinical Presets:</span>
@@ -187,7 +342,7 @@
                   <option value="qnn" selected>Quantum ML: True QNN (Phase 24 · 4-Qubit)</option>
                   <option value="vqc">Quantum ML: Hybrid VQC (Phase 21 · 4-Qubit)</option>
                 </optgroup>
-                <optgroup label="Classical & Federated Baselines">
+                <optgroup label="Classical &amp; Federated Baselines">
                   <option value="classical_rf">Classical ML: Centralized Random Forest (99.83%)</option>
                   <option value="federated_rf">Federated ML: Federated Random Forest (100.00%)</option>
                 </optgroup>
@@ -201,7 +356,7 @@
           </div>
         </div>
 
-        <!-- 2. UPLOAD REPORT MODE -->
+        <!-- 3. UPLOAD REPORT MODE -->
         <div id="uploadModeSection" style="display: none;">
           <div class="prediction-toolbar right">
             <div class="model-select-strip">
@@ -320,6 +475,15 @@
                 <span class="ai-card-label">Clinical Action Guidance</span>
                 <strong class="ai-card-value" id="aiActionNote">—</strong>
               </div>
+            </div>
+          </div>
+
+          <!-- Medical Safety & Decision-Support Disclaimer -->
+          <div class="medical-safety-banner">
+            <span class="safety-icon">⚠️</span>
+            <div class="safety-text">
+              <strong>Medical Decision-Support &amp; Research Disclaimer:</strong>
+              This system is an AI / Quantum Machine Learning research decision-support prototype and does not constitute an autonomous medical diagnosis. Predictions are probabilistic risk stratifications based on acoustic telemonitoring models and must be interpreted by a qualified neurologist or movement disorder specialist in conjunction with physical motor examination (MDS-UPDRS Part III).
             </div>
           </div>
         </div>
