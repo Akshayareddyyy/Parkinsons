@@ -247,9 +247,18 @@ class QuantumInferenceEngine:
             )
         else:
             risk_level = "Elevated Severity - Moderate-to-Severe Impairment Alert"
-            if top_elevating:
+            acoustic_elevating = [c for c in top_elevating if c["feature"] not in ["sex", "age"]]
+            if acoustic_elevating:
+                worst = acoustic_elevating[0]
+                biomarker_note = f"{worst['feature']} is elevated at {worst['z_score']:+.2f}&sigma; above baseline norm, indicating severe vocal cord and laryngeal timing instability."
+            elif top_elevating:
                 worst = top_elevating[0]
-                biomarker_note = f"{worst['feature']} is significantly perturbed at {worst['z_score']:+.2f}&sigma; above baseline norm, indicating severe vocal instability."
+                if worst['feature'] == 'sex':
+                    biomarker_note = f"Demographic factor (Sex: Male, {worst['z_score']:+.2f}&sigma;) correlates with elevated motor UPDRS progression in clinical study populations."
+                elif worst['feature'] == 'age':
+                    biomarker_note = f"Patient age ({worst['value']} yrs, {worst['z_score']:+.2f}&sigma;) is a contributing demographic risk factor for progressive motor decline."
+                else:
+                    biomarker_note = f"{worst['feature']} ({worst['z_score']:+.2f}&sigma;) is contributing toward the elevated motor impairment score."
             else:
                 biomarker_note = f"Multi-parameter acoustic deviations detected across {feat_str}, reflecting severe laryngeal muscle rigidity."
 

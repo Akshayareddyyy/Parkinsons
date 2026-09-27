@@ -625,10 +625,24 @@ export class RealPredictor {
         recommendation: "Continue routine periodic telemonitoring every 30–60 days. No immediate motor intervention indicated."
       };
     } else {
+      let bNote = "Significant multi-feature acoustic deviations detected across speech parameters.";
+      if (data.contributing_features && data.contributing_features.length > 0) {
+        const acousticFeat = data.contributing_features.find(c => c.direction.includes('Elevates') && c.feature !== 'sex' && c.feature !== 'age');
+        if (acousticFeat) {
+          bNote = `${acousticFeat.feature} is elevated at ${acousticFeat.z_score >= 0 ? '+' : ''}${acousticFeat.z_score}σ above baseline norm, indicating severe vocal instability.`;
+        } else if (topFeat && topFeat.feature === 'sex') {
+          bNote = `Demographic factor (Sex: Male, +${topFeat.z_score}σ) correlates with elevated motor UPDRS progression in clinical datasets.`;
+        } else if (topFeat && topFeat.feature === 'age') {
+          bNote = `Patient age (${topFeat.value} yrs, +${topFeat.z_score}σ) represents a contributing demographic risk factor.`;
+        } else if (topFeat) {
+          bNote = `${topFeat.feature} is elevated at ${topFeat.z_score >= 0 ? '+' : ''}${topFeat.z_score}σ above baseline norm.`;
+        }
+      }
+
       return {
         summary: `<strong>AI Clinical Finding:</strong> The model stratifies this patient telemetry as <strong>Class 1 (Moderate-to-Severe Impairment)</strong> with <strong>${conf}% confidence</strong> (calibrated probability: ${prob}). Standardized acoustic telemetry reveals marked distortions in vocal micro-timing and elevated harmonic turbulence, characteristic of hypokinetic dysphonia resulting from striatal dopamine depletion. Correlation with physical motor assessments (bradykinesia, rigidity, tremor) is clinically indicated.`,
         risk_level: "Elevated Severity · Moderate-to-Severe Impairment Alert",
-        biomarker_note: topFeat ? `${topFeat.feature} is significantly perturbed at ${topFeat.z_score >= 0 ? '+' : ''}${topFeat.z_score}σ above baseline norm, indicating severe vocal instability.` : "Significant multi-feature acoustic deviations detected across speech parameters.",
+        biomarker_note: bNote,
         recommendation: "Recommend formal neurological motor evaluation (MDS-UPDRS Part III) and specialist movement disorder consultation."
       };
     }
