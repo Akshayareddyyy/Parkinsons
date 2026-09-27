@@ -115,7 +115,8 @@ export class RealPredictor {
 
     this.dropzone = document.getElementById('reportDropzone');
     this.fileInput = document.getElementById('reportFileInput');
-    this.sampleReportBtns = document.querySelectorAll('.btn-sample-report');
+    this.uploadStatusIndicator = document.getElementById('uploadStatusIndicator');
+    this.uploadStatusText = document.getElementById('uploadStatusText');
     this.extractedCard = document.getElementById('extractedReportCard');
     this.extractedGrid = document.getElementById('extractedGrid');
     this.reportFileName = document.getElementById('reportFileName');
@@ -331,13 +332,14 @@ export class RealPredictor {
       this.modeUploadBtn.classList.remove('active');
       this.manualSection.style.display = 'block';
       this.uploadSection.style.display = 'none';
-      if (this.executeBtn) this.executeBtn.parentElement.style.display = 'flex';
     } else {
       this.modeUploadBtn.classList.add('active');
       this.modeManualBtn.classList.remove('active');
       this.manualSection.style.display = 'none';
       this.uploadSection.style.display = 'block';
-      if (this.executeBtn) this.executeBtn.parentElement.style.display = 'none';
+    }
+    if (this.executeBtn && this.executeBtn.parentElement) {
+      this.executeBtn.parentElement.style.display = 'flex';
     }
   }
 
@@ -409,7 +411,13 @@ export class RealPredictor {
 
     this.currentValues = { ...extracted };
     this.syncSlidersWithValues();
-    this.renderExtractedCard(filename, sizeStr, extracted, extractedCount);
+    if (this.uploadStatusIndicator && this.uploadStatusText) {
+      this.uploadStatusIndicator.style.display = 'flex';
+      this.uploadStatusText.textContent = `Report loaded: ${filename} (${sizeStr}) — 12/12 ANOVA Biomarkers standard-calibrated`;
+    }
+    if (this.extractedCard && this.extractedGrid) {
+      this.renderExtractedCard(filename, sizeStr, extracted, extractedCount);
+    }
   }
 
   syncSlidersWithValues() {

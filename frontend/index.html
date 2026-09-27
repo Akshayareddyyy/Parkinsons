@@ -224,38 +224,10 @@
             <span class="dropzone-formats">Supports standard CSV tables, JSON records, and clinical text exports</span>
           </div>
 
-          <!-- Sample Reports Bar -->
-          <div class="sample-reports-bar">
-            <span class="sample-label">Quick Test Sample Reports:</span>
-            <button type="button" class="btn-sample-report" data-sample="mild">
-              <span>📄</span>
-              <span>Patient_04_Mild_UPDRS12.csv</span>
-            </button>
-            <button type="button" class="btn-sample-report" data-sample="severe">
-              <span>📄</span>
-              <span>Patient_39_Severe_UPDRS34.json</span>
-            </button>
-          </div>
-
-          <!-- Extracted Report Card -->
-          <div class="extracted-card" id="extractedReportCard" style="display: none;">
-            <div class="extracted-header">
-              <div class="extracted-meta">
-                <strong id="reportFileName" class="report-name">patient_report.csv</strong>
-                <span id="reportFileSize" class="report-size">1.2 KB</span>
-              </div>
-              <div class="report-status-badge success" id="reportStatusBadge">
-                <span class="status-dot"></span>
-                <span id="reportStatusText">12/12 ANOVA Biomarkers Verified</span>
-              </div>
-            </div>
-
-            <div class="extracted-grid" id="extractedGrid"></div>
-
-            <div class="extracted-actions">
-              <span class="extracted-note">Features mapped and standardized against Development cohort parameters.</span>
-              <button type="button" class="btn-primary" id="analyzeReportBtn">Analyze Report with Selected Model →</button>
-            </div>
+          <!-- Upload Status Indicator -->
+          <div class="upload-status-indicator" id="uploadStatusIndicator" style="display: none;">
+            <span class="status-icon">✓</span>
+            <span class="status-text" id="uploadStatusText">Report loaded successfully</span>
           </div>
         </div>
 
