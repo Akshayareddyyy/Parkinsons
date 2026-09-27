@@ -213,74 +213,257 @@ async def analyze_and_predict_voice(
 @app.post("/api/report/extract")
 async def extract_report_endpoint(file: UploadFile = File(...)):
     """
-    Programmatic extraction of 12-ANOVA Parkinson's biomarkers from clinical reports.
-    Supports PDF clinical records, CSV data tables, JSON records, and plain text exports.
+    Robust clinical report extractor supporting PDF, CSV, JSON, and plain text.
+    Extracts 12-ANOVA Parkinson's biomarkers including motor_UPDRS, demographic baselines,
+    and acoustic telemetry with multi-table extraction, inline/multiline parsing, and alias normalization.
     """
     import json, io, re
     content = await file.read()
     filename = (file.filename or "").lower()
-    text = ""
+
+    CANONICAL_ALIASES = {
+        # motor_UPDRS
+        "motorupdrs": "motor_UPDRS",
+        "updrsmotor": "motor_UPDRS",
+        "mdsupdrs": "motor_UPDRS",
+        "mdsupdrsiii": "motor_UPDRS",
+        "updrsiii": "motor_UPDRS",
+        "motor": "motor_UPDRS",
+        "updrs": "motor_UPDRS",
+        # Total_UPDRS
+        "totalupdrs": "Total_UPDRS",
+        "updrstotal": "Total_UPDRS",
+        "overallupdrs": "Total_UPDRS",
+        # PPE
+        "ppe": "PPE",
+        "pitchperiodentropy": "PPE",
+        # RPDE
+        "rpde": "RPDE",
+        "recurrenceperioddensityentropy": "RPDE",
+        # HNR
+        "hnr": "HNR",
+        "harmonicstonoise": "HNR",
+        "harmonicstonoiseratio": "HNR",
+        # DFA
+        "dfa": "DFA",
+        "detrendedfluctuationanalysis": "DFA",
+        # Jitter(%)
+        "jitter%": "Jitter(%)",
+        "jitterpercent": "Jitter(%)",
+        "jitterpercentage": "Jitter(%)",
+        "jitterpct": "Jitter(%)",
+        "mdvpjitter%": "Jitter(%)",
+        "mdvpjitterpct": "Jitter(%)",
+        "jitter": "Jitter(%)",
+        # Jitter(Abs)
+        "mdvpabsolutejitter": "Jitter(Abs)",
+        "absolutejitter": "Jitter(Abs)",
+        "jitterabs": "Jitter(Abs)",
+        "jitter(abs)": "Jitter(Abs)",
+        "mdvpjitterabs": "Jitter(Abs)",
+        "absjitter": "Jitter(Abs)",
+        # Jitter:RAP
+        "jitterrap": "Jitter:RAP",
+        "mdvprap": "Jitter:RAP",
+        "rap": "Jitter:RAP",
+        "relativeaverageperturbation": "Jitter:RAP",
+        # Jitter:PPQ5
+        "jitterppq5": "Jitter:PPQ5",
+        "jitterppq": "Jitter:PPQ5",
+        "mdvpppq": "Jitter:PPQ5",
+        "ppq5": "Jitter:PPQ5",
+        "ppq": "Jitter:PPQ5",
+        # Jitter:DDP
+        "jitterddp": "Jitter:DDP",
+        "ddp": "Jitter:DDP",
+        # Shimmer metrics
+        "shimmer": "Shimmer",
+        "shimmerdb": "Shimmer(dB)",
+        "shimmerapq3": "Shimmer:APQ3",
+        "shimmerapq5": "Shimmer:APQ5",
+        "shimmerapq11": "Shimmer:APQ11",
+        "shimmerdda": "Shimmer:DDA",
+        # NHR
+        "nhr": "NHR",
+        # Age & Sex
+        "age": "age",
+        "patientage": "age",
+        "chronologicalage": "age",
+        "sex": "sex",
+        "gender": "sex",
+        "biologicalsex": "sex",
+    }
+
+    def clean_key(raw: str) -> str:
+        if not raw:
+            return ""
+        return re.sub(r'[^a-z0-9%]', '', str(raw).lower())
+
+    def match_canonical(raw_key: str):
+        cleaned = clean_key(raw_key)
+        if not cleaned:
+            return None
+        if cleaned in CANONICAL_ALIASES:
+            return CANONICAL_ALIASES[cleaned]
+        for alias in sorted(CANONICAL_ALIASES.keys(), key=len, reverse=True):
+            if len(alias) >= 4 and alias in cleaned:
+                return CANONICAL_ALIASES[alias]
+        return None
+
+    def parse_val(raw_val: str, canon: str):
+        if raw_val is None:
+            return None
+        s = str(raw_val).strip()
+        if not s:
+            return None
+        if canon == "sex":
+            s_low = s.lower()
+            if "female" in s_low or s_low in ["0", "0.0", "f"]:
+                return 0.0
+            if "male" in s_low or s_low in ["1", "1.0", "m"]:
+                return 1.0
+        m = re.search(r'[-+]?[0-9]*\.?[0-9]+(?:[eE][-+]?[0-9]+)?', s)
+        if m:
+            try:
+                return float(m.group(0))
+            except ValueError:
+                pass
+        return None
+
+    extracted = {}
+    full_text = ""
 
     try:
         if filename.endswith(".pdf"):
             import pdfplumber
             with pdfplumber.open(io.BytesIO(content)) as pdf:
-                pages = [p.extract_text() or "" for p in pdf.pages]
-                text = "\n".join(pages)
+                pages_text = []
+                for page in pdf.pages:
+                    pages_text.append(page.extract_text() or "")
+                    # 1. Structured table extraction
+                    for tbl in (page.extract_tables() or []):
+                        if not tbl:
+                            continue
+                        for row in tbl:
+                            if not row or len(row) < 2:
+                                continue
+                            cell0 = str(row[0] or "").strip()
+                            canon = match_canonical(cell0)
+                            if canon and canon not in extracted:
+                                val = parse_val(row[1], canon)
+                                if val is not None:
+                                    extracted[canon] = val
+                            if len(row) >= 3 and (not canon or canon in extracted):
+                                cell1 = str(row[1] or "").strip()
+                                canon1 = match_canonical(cell1)
+                                if canon1 and canon1 not in extracted:
+                                    val = parse_val(row[2], canon1)
+                                    if val is not None:
+                                        extracted[canon1] = val
+                        # Check header-row column orientation
+                        if len(tbl) >= 2:
+                            headers = [str(c or "").strip() for c in tbl[0]]
+                            values = [str(c or "").strip() for c in tbl[1]]
+                            for h, v in zip(headers, values):
+                                canon = match_canonical(h)
+                                if canon and canon not in extracted:
+                                    val = parse_val(v, canon)
+                                    if val is not None:
+                                        extracted[canon] = val
+                full_text = "\n".join(pages_text)
+
         elif filename.endswith(".json"):
             try:
                 parsed = json.loads(content.decode("utf-8", errors="ignore"))
                 flat = parsed.get("biomarkers") or parsed.get("features") or parsed.get("data") or parsed
                 if isinstance(flat, dict):
-                    text = "\n".join(f"{k}: {v}" for k, v in flat.items())
+                    for k, v in flat.items():
+                        canon = match_canonical(k)
+                        if canon and canon not in extracted:
+                            val = parse_val(v, canon)
+                            if val is not None:
+                                extracted[canon] = val
+                    full_text = "\n".join(f"{k}: {v}" for k, v in flat.items())
                 else:
-                    text = json.dumps(flat)
+                    full_text = json.dumps(flat)
             except Exception:
-                text = content.decode("utf-8", errors="ignore")
+                full_text = content.decode("utf-8", errors="ignore")
+
+        elif filename.endswith(".csv"):
+            full_text = content.decode("utf-8", errors="ignore")
+            lines = [l.strip() for l in full_text.splitlines() if l.strip()]
+            delimiter = "," if "," in (lines[0] if lines else "") else ("\t" if "\t" in (lines[0] if lines else "") else ";")
+            if len(lines) >= 2 and delimiter in lines[0]:
+                headers = [h.strip().strip('"\'') for h in lines[0].split(delimiter)]
+                values = [v.strip().strip('"\'') for v in lines[1].split(delimiter)]
+                for h, v in zip(headers, values):
+                    canon = match_canonical(h)
+                    if canon and canon not in extracted:
+                        val = parse_val(v, canon)
+                        if val is not None:
+                            extracted[canon] = val
         else:
-            text = content.decode("utf-8", errors="ignore")
+            full_text = content.decode("utf-8", errors="ignore")
 
-        ALIAS_MAP = {
-            "motorupdrs": "motor_UPDRS", "updrs": "motor_UPDRS", "motor": "motor_UPDRS",
-            "ppe": "PPE", "rpde": "RPDE", "hnr": "HNR", "dfa": "DFA",
-            "jitterabs": "Jitter(Abs)", "jitter(abs)": "Jitter(Abs)", "mdvpjitterabs": "Jitter(Abs)",
-            "jitter%": "Jitter(%)", "jitter(%)": "Jitter(%)", "jitterpercent": "Jitter(%)", "jitterpct": "Jitter(%)",
-            "jitterrap": "Jitter:RAP", "jitter:rap": "Jitter:RAP", "mdvprap": "Jitter:RAP",
-            "jitterppq5": "Jitter:PPQ5", "jitter:ppq5": "Jitter:PPQ5", "mdvpppq": "Jitter:PPQ5",
-            "jitterddp": "Jitter:DDP", "jitter:ddp": "Jitter:DDP",
-            "age": "age", "sex": "sex", "gender": "sex"
-        }
+        # 2. Line-by-Line & Multiline Analysis across text
+        lines = [l.strip() for l in full_text.splitlines() if l.strip()]
+        for i, line in enumerate(lines):
+            # 2A. Same-line parameter + value (separated by space, tab, colon, equal)
+            for alias, canon in CANONICAL_ALIASES.items():
+                if canon not in extracted:
+                    pattern = re.compile(rf'(?:^|\b){re.escape(alias)}\b\s*[:=,\t\s]\s*([A-Za-z0-9.]+)', re.IGNORECASE)
+                    m = pattern.search(line)
+                    if m:
+                        val = parse_val(m.group(1), canon)
+                        if val is not None:
+                            extracted[canon] = val
 
-        extracted = {}
-        # Parse CSV if commas detected
-        lines = [l.strip() for l in text.splitlines() if l.strip()]
-        if len(lines) >= 2 and "," in lines[0]:
-            headers = [h.strip().strip('"\'').lower().replace(" ", "").replace("_", "") for h in lines[0].split(",")]
-            values = [v.strip().strip('"\'') for v in lines[1].split(",")]
-            for h, v in zip(headers, values):
-                if h in ALIAS_MAP:
-                    try:
-                        extracted[ALIAS_MAP[h]] = float(v)
-                    except ValueError:
-                        pass
+            # 2B. Multiline: parameter on line i, numeric value on line i+1 / i+2
+            for alias, canon in CANONICAL_ALIASES.items():
+                if canon not in extracted:
+                    clean_l = clean_key(line)
+                    if clean_l == alias or (len(alias) >= 5 and clean_l.startswith(alias)):
+                        for offset in [1, 2]:
+                            if i + offset < len(lines):
+                                candidate = lines[i + offset]
+                                val = parse_val(candidate, canon)
+                                if val is not None:
+                                    extracted[canon] = val
+                                    break
 
-        # Regex search for key-value pairs
-        for alias, canon in ALIAS_MAP.items():
+        # 2C. Fallback full-text regex
+        for alias, canon in CANONICAL_ALIASES.items():
             if canon not in extracted:
-                pattern = re.compile(rf'(?:^|\b){re.escape(alias)}\s*[:=,\t]\s*([0-9.]+)', re.IGNORECASE)
-                m = pattern.search(text)
+                pat = re.compile(rf'(?:^|\b){re.escape(alias)}\b\s*[:=,\t\s\n\r]+\s*([A-Za-z0-9.]+)', re.IGNORECASE)
+                m = pat.search(full_text)
                 if m:
-                    try:
-                        extracted[canon] = float(m.group(1))
-                    except ValueError:
-                        pass
+                    val = parse_val(m.group(1), canon)
+                    if val is not None:
+                        extracted[canon] = val
+
+        REQUIRED_FEATURES = [
+            "motor_UPDRS", "age", "sex", "PPE", "RPDE", "HNR", "DFA",
+            "Jitter(%)", "Jitter(Abs)", "Jitter:RAP", "Jitter:PPQ5", "Jitter:DDP"
+        ]
+        missing = [f for f in REQUIRED_FEATURES if f not in extracted]
+
+        # Console debug logging as specified in prompt section 10
+        print(f"[PDF] Extracted text length: {len(full_text)}")
+        print(f"[PDF] Detected motor_UPDRS: {extracted.get('motor_UPDRS', 'NOT FOUND')}")
+        print(f"[PDF] Detected Total_UPDRS: {extracted.get('Total_UPDRS', 'NOT FOUND')}")
+        print(f"[PDF] Required features found: {12 - len(missing)}/12")
+        print(f"[PDF] Missing features: {missing}")
 
         return {
             "success": True,
             "filename": file.filename,
             "extracted_features": extracted,
             "count": len(extracted),
-            "text_preview": text[:400] if text else "No text extracted"
+            "required_count": 12 - len(missing),
+            "missing_required": missing,
+            "detected_motor_updrs": extracted.get("motor_UPDRS"),
+            "detected_total_updrs": extracted.get("Total_UPDRS"),
+            "text_preview": full_text[:400] if full_text else "No text extracted"
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to parse report file: {str(e)}")

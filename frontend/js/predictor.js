@@ -1129,6 +1129,8 @@ export class RealPredictor {
 
   async processReportAndPredict() {
     this.hideUploadError();
+    const extractedCard = document.getElementById('reportExtractedCard');
+    if (extractedCard) extractedCard.style.display = 'none';
 
     if (!this.selectedReportFile) {
       this.showUploadError("Please select a clinical report file (PDF, CSV, JSON, or TXT) first.");
@@ -1136,7 +1138,6 @@ export class RealPredictor {
     }
 
     const file = this.selectedReportFile;
-    const sizeStr = file.size > 1024 ? `${(file.size / 1024).toFixed(1)} KB` : `${file.size} B`;
 
     if (this.uploadPredictBtn) {
       this.uploadPredictBtn.disabled = true;
@@ -1146,7 +1147,8 @@ export class RealPredictor {
     try {
       let extracted = {};
 
-      if (file.name.toLowerCase().endsWith('.pdf')) {
+      // 1. Send all report files to backend endpoint for unified multi-table/multiline parsing
+      try {
         const formData = new FormData();
         formData.append('file', file);
         const res = await fetch(`${this.apiBase}/api/report/extract`, {
@@ -1154,12 +1156,19 @@ export class RealPredictor {
           body: formData
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || 'PDF parsing failed');
-        extracted = data.extracted_features || {};
-      } else {
-        // Parse CSV, JSON, or TXT directly
-        const text = await file.text();
-        extracted = this.parseReportText(text);
+        if (res.ok && data.extracted_features) {
+          extracted = data.extracted_features;
+        } else {
+          throw new Error(data.detail || 'Server extraction failed');
+        }
+      } catch (backendErr) {
+        console.warn('Backend endpoint extraction fallback to client-side parser:', backendErr);
+        if (!file.name.toLowerCase().endsWith('.pdf')) {
+          const text = await file.text();
+          extracted = this.parseReportText(text);
+        } else {
+          throw backendErr;
+        }
       }
 
       // STRICT VALIDATION: Do NOT fabricate missing values!
@@ -1183,6 +1192,9 @@ export class RealPredictor {
         this.uploadStatusText.textContent = `Clinical report processed successfully (${file.name}): 12/12 Biomarkers verified. Running prediction...`;
       }
 
+      // Render parsed data card for clinical review / debugging (Prompt Section 7)
+      this.renderReportExtractedFeatures(extracted);
+
       // Execute prediction with True QNN model
       const predRes = await fetch(`${this.apiBase}/api/predict`, {
         method: 'POST',
@@ -1205,6 +1217,7 @@ export class RealPredictor {
     } catch (err) {
       console.error('Report processing error:', err);
       this.showUploadError(err.message || "Failed to process clinical report.");
+      if (extractedCard) extractedCard.style.display = 'none';
     } finally {
       if (this.uploadPredictBtn) {
         this.uploadPredictBtn.disabled = false;
@@ -1213,8 +1226,77 @@ export class RealPredictor {
     }
   }
 
+  renderReportExtractedFeatures(extracted) {
+    const card = document.getElementById('reportExtractedCard');
+    const grid = document.getElementById('reportExtractedGrid');
+    const badge = document.getElementById('reportExtractedBadge');
+    if (!card || !grid) return;
+
+    grid.innerHTML = '';
+    const featureDisplayOrder = [
+      { key: 'age', label: 'Age', unit: 'yrs' },
+      { key: 'sex', label: 'Sex', format: (v) => (Number(v) === 1.0 ? 'Male' : 'Female') },
+      { key: 'motor_UPDRS', label: 'motor_UPDRS', highlight: true },
+      { key: 'Total_UPDRS', label: 'Total_UPDRS', highlight: true },
+      { key: 'Jitter(%)', label: 'Jitter(%)' },
+      { key: 'Jitter(Abs)', label: 'Jitter(Abs)' },
+      { key: 'Jitter:RAP', label: 'Jitter:RAP' },
+      { key: 'Jitter:PPQ5', label: 'Jitter:PPQ5' },
+      { key: 'Jitter:DDP', label: 'Jitter:DDP' },
+      { key: 'Shimmer', label: 'Shimmer' },
+      { key: 'HNR', label: 'HNR', unit: 'dB' },
+      { key: 'RPDE', label: 'RPDE' },
+      { key: 'DFA', label: 'DFA' },
+      { key: 'PPE', label: 'PPE' }
+    ];
+
+    let count = 0;
+    const handledKeys = new Set();
+
+    featureDisplayOrder.forEach(item => {
+      if (extracted[item.key] !== undefined && !isNaN(extracted[item.key])) {
+        count++;
+        handledKeys.add(item.key);
+        const val = extracted[item.key];
+        const displayVal = item.format ? item.format(val) : (item.unit ? `${val} ${item.unit}` : val);
+        const chip = document.createElement('div');
+        chip.className = `extracted-chip ${item.highlight ? 'extracted-chip-highlight' : ''}`;
+        chip.innerHTML = `<span class="chip-label">${item.label}:</span> <span class="chip-val">${displayVal}</span>`;
+        grid.appendChild(chip);
+      }
+    });
+
+    // Also display any additional extracted metadata (e.g. NHR, Shimmer variants)
+    Object.keys(extracted).forEach(k => {
+      if (!handledKeys.has(k) && !isNaN(extracted[k])) {
+        count++;
+        const chip = document.createElement('div');
+        chip.className = 'extracted-chip';
+        chip.innerHTML = `<span class="chip-label">${k}:</span> <span class="chip-val">${extracted[k]}</span>`;
+        grid.appendChild(chip);
+      }
+    });
+
+    if (badge) {
+      badge.textContent = `${count} Verified`;
+    }
+    card.style.display = 'block';
+  }
+
   parseReportText(text) {
     const extracted = {};
+
+    const parseValue = (raw, canon) => {
+      if (!raw) return null;
+      const s = String(raw).trim();
+      if (canon === 'sex') {
+        const sLow = s.toLowerCase();
+        if (sLow.includes('female') || sLow === '0' || sLow === 'f') return 0.0;
+        if (sLow.includes('male') || sLow === '1' || sLow === 'm') return 1.0;
+      }
+      const m = s.match(/[-+]?[0-9]*\.?[0-9]+(?:[eE][-+]?[0-9]+)?/);
+      return m ? parseFloat(m[0]) : null;
+    };
 
     try {
       const json = JSON.parse(text);
@@ -1222,8 +1304,8 @@ export class RealPredictor {
       Object.keys(dataObj).forEach(k => {
         const canonical = this.canonicalFeatureId(k);
         if (canonical && dataObj[k] !== undefined) {
-          const val = parseFloat(dataObj[k]);
-          if (!isNaN(val)) extracted[canonical] = val;
+          const val = parseValue(dataObj[k], canonical);
+          if (val !== null && !isNaN(val)) extracted[canonical] = val;
         }
       });
       return extracted;
@@ -1231,6 +1313,7 @@ export class RealPredictor {
       // Plain text or CSV parsing
       const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
 
+      // CSV parsing
       if (lines.length >= 2 && lines[0].includes(',')) {
         const headers = lines[0].split(',').map(h => h.trim().replace(/^["']|["']$/g, ''));
         const values = lines[1].split(',').map(v => v.trim().replace(/^["']|["']$/g, ''));
@@ -1238,23 +1321,48 @@ export class RealPredictor {
         headers.forEach((h, idx) => {
           const canonical = this.canonicalFeatureId(h);
           if (canonical && values[idx] !== undefined) {
-            const val = parseFloat(values[idx]);
-            if (!isNaN(val)) extracted[canonical] = val;
+            const val = parseValue(values[idx], canonical);
+            if (val !== null && !isNaN(val)) extracted[canonical] = val;
           }
         });
       }
 
-      ANOVA12_FEATURES.forEach(f => {
-        if (extracted[f.id] === undefined) {
-          const escapedName = f.name.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
-          const regex = new RegExp(`(?:^|[\\s,;])(?:${escapedName}|${f.id})\\s*[:=,\t]\\s*([0-9.]+)`, 'i');
-          const match = text.match(regex);
-          if (match && match[1]) {
-            const val = parseFloat(match[1]);
-            if (!isNaN(val)) extracted[f.id] = val;
+      // Line-by-line inline and multiline parsing
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+
+        // Inline match (same line)
+        ANOVA12_FEATURES.forEach(f => {
+          if (extracted[f.id] === undefined) {
+            const escapedName = f.name.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+            const regex = new RegExp(`(?:^|[\\s,;])(?:${escapedName}|${f.id})\\s*[:=,\\t\\s]\\s*([A-Za-z0-9.]+)`, 'i');
+            const match = line.match(regex);
+            if (match && match[1]) {
+              const val = parseValue(match[1], f.id);
+              if (val !== null && !isNaN(val)) extracted[f.id] = val;
+            }
           }
-        }
-      });
+        });
+
+        // Multiline match (feature on line i, value on line i+1 / i+2)
+        ANOVA12_FEATURES.forEach(f => {
+          if (extracted[f.id] === undefined) {
+            const cleanL = line.toLowerCase().replace(/[^a-z0-9%]/g, '');
+            const cleanF = f.id.toLowerCase().replace(/[^a-z0-9%]/g, '');
+            if (cleanL === cleanF || cleanL.startsWith(cleanF)) {
+              for (let offset = 1; offset <= 2; offset++) {
+                if (i + offset < lines.length) {
+                  const val = parseValue(lines[i + offset], f.id);
+                  if (val !== null && !isNaN(val)) {
+                    extracted[f.id] = val;
+                    break;
+                  }
+                }
+              }
+            }
+          }
+        });
+      }
 
       return extracted;
     }
@@ -1262,15 +1370,18 @@ export class RealPredictor {
 
   canonicalFeatureId(rawKey) {
     if (!rawKey) return null;
-    const clean = String(rawKey).trim().toLowerCase().replace(/[\s_\-:]+/g, '');
+    const clean = String(rawKey).trim().toLowerCase().replace(/[^a-z0-9%]/g, '');
     const ALIAS_MAP = {
       "motorupdrs": "motor_UPDRS",
       "updrs": "motor_UPDRS",
       "motor": "motor_UPDRS",
+      "totalupdrs": "Total_UPDRS",
       "ppe": "PPE",
       "rpde": "RPDE",
       "hnr": "HNR",
       "dfa": "DFA",
+      "mdvpabsolutejitter": "Jitter(Abs)",
+      "absolutejitter": "Jitter(Abs)",
       "jitterabs": "Jitter(Abs)",
       "jitter(abs)": "Jitter(Abs)",
       "mdvpjitterabs": "Jitter(Abs)",
@@ -1279,6 +1390,7 @@ export class RealPredictor {
       "jitterpercent": "Jitter(%)",
       "jitterpct": "Jitter(%)",
       "mdvpjitter%": "Jitter(%)",
+      "jitter": "Jitter(%)",
       "jitterrap": "Jitter:RAP",
       "jitter:rap": "Jitter:RAP",
       "mdvprap": "Jitter:RAP",
@@ -1288,6 +1400,7 @@ export class RealPredictor {
       "mdvpppq": "Jitter:PPQ5",
       "jitterddp": "Jitter:DDP",
       "jitter:ddp": "Jitter:DDP",
+      "shimmer": "Shimmer",
       "age": "age",
       "sex": "sex",
       "gender": "sex"

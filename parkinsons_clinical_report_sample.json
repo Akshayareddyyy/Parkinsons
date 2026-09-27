@@ -1,0 +1,20 @@
+{
+  "report_id": "PARK-2026-884",
+  "patient_name": "Arthur Vance",
+  "date": "2026-09-28",
+  "biomarkers": {
+    "age": 68.0,
+    "sex": 1.0,
+    "UPDRS": 22.4,
+    "motor_UPDRS": 22.4,
+    "PPE": 0.231,
+    "RPDE": 0.542,
+    "HNR": 21.65,
+    "DFA": 0.658,
+    "Jitter(%)": 0.0054,
+    "Jitter(Abs)": 0.000042,
+    "Jitter:RAP": 0.0028,
+    "Jitter:PPQ5": 0.0031,
+    "Jitter:DDP": 0.0084
+  }
+}

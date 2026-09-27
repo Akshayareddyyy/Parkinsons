@@ -1,0 +1,21 @@
+PATIENT TELEMONITORING CLINICAL REPORT
+Report ID: PARK-2026-884
+Patient Name: Arthur Vance
+Assessment Date: September 28, 2026
+
+CLINICAL & MOTOR EVALUATION:
+Age: 68
+Sex: 1
+UPDRS: 22.4
+motor_UPDRS: 22.4
+
+VOICE ACOUSTIC TELEMETRY:
+Jitter(%): 0.0054
+Jitter(Abs): 0.000042
+Jitter:RAP: 0.0028
+Jitter:PPQ5: 0.0031
+Jitter:DDP: 0.0084
+HNR: 21.65
+DFA: 0.658
+RPDE: 0.542
+PPE: 0.231
